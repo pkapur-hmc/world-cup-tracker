@@ -1,0 +1,10 @@
+{
+  "_comment": "FIFA World Cup 2026 - 48 qualified teams. Hosts USA/CAN/MEX auto-qualified. Group letters from the Dec 5, 2025 draw - TODO: verify all assignments against official FIFA source before final seed.",
+  "_schema": "code (ISO 3-letter) | name | flag_emoji | group_letter (A-L, null if unassigned)",
+  "teams": [
+    { "code": "USA", "name": "United States", "flag_emoji": "🇺🇸", "group_letter": null },
+    { "code": "CAN", "name": "Canada",        "flag_emoji": "🇨🇦", "group_letter": null },
+    { "code": "MEX", "name": "Mexico",        "flag_emoji": "🇲🇽", "group_letter": null }
+  ],
+  "_todo": "Add remaining 45 qualified teams. See https://www.fifa.com for official roster."
+}
