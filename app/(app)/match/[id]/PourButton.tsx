@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useOptimistic, useRef, useState, useTransition } from "react";
 import { pourAction, undoLastBasicForMatchAction } from "./actions";
 import { WccIcon } from "@/components/ui/CurrencyIcon";
 
@@ -9,9 +9,11 @@ import { WccIcon } from "@/components/ui/CurrencyIcon";
  * combined). Breakdown below splits it. Buttons act on the BASIC bucket only;
  * country-specific drinks are added/removed in the BeerStampRail sheet.
  *
- * `countryCount` is owned by the server-rendered page and passed in fresh each
- * render. We track only the basic bucket locally so the +1 / −1 buttons feel
- * immediate without having to sync country state across components.
+ * useOptimistic gives us instant +/- feedback while server actions run.
+ * Once the transition wraps up (revalidatePath re-renders this component with
+ * fresh props), the optimistic delta is automatically discarded and the new
+ * server values become the source of truth. That same mechanism is what
+ * picks up country-beer pours from BeerStampRail.
  */
 export function PourButton({
   matchId,
@@ -28,34 +30,32 @@ export function PourButton({
     Number.isFinite(Number(n)) ? Number(n) : 0;
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
-  const [basicCount, setBasicCount] = useState(() => toNum(initialBasicCount));
-  const [totalOptim, setTotalOptim] = useState(() => toNum(totalAllTime));
   const plusRef = useRef<HTMLButtonElement>(null);
+
+  // One reducer drives both displays: the basic count for this match, and the
+  // all-time total. A basic +/- moves both by ±1. The country count comes
+  // straight from props (BeerStampRail owns its own optimistic state and we
+  // pick up the new prop after revalidation).
+  const [basicCount, applyBasicDelta] = useOptimistic(
+    toNum(initialBasicCount),
+    (cur, delta: 1 | -1) => Math.max(0, cur + delta),
+  );
+  const [totalDrinks, applyTotalDelta] = useOptimistic(
+    toNum(totalAllTime),
+    (cur, delta: 1 | -1) => Math.max(0, cur + delta),
+  );
 
   const country = toNum(countryCount);
   const matchTotal = basicCount + country;
 
-  // Resync the all-time total when the server prop changes from outside
-  // (e.g. BeerStampRail logged a country beer, server action revalidated).
-  // Skip while a basic +/- is in flight - our own optimistic value is fresher.
-  useEffect(() => {
-    if (pending) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTotalOptim(toNum(totalAllTime));
-  }, [totalAllTime, pending]);
-
   function plus() {
     setErr(null);
-    setBasicCount((c) => c + 1);
-    setTotalOptim((c) => c + 1);
     spawnFoamBubble(plusRef.current);
     startTransition(async () => {
+      applyBasicDelta(1);
+      applyTotalDelta(1);
       const res = await pourAction({ matchId });
-      if ("error" in res) {
-        setBasicCount((c) => Math.max(0, c - 1));
-        setTotalOptim((c) => Math.max(0, c - 1));
-        setErr(res.error);
-      }
+      if ("error" in res) setErr(res.error);
     });
   }
 
@@ -65,15 +65,11 @@ export function PourButton({
       setErr("no basic drinks to remove (country beers use the section below)");
       return;
     }
-    setBasicCount((c) => Math.max(0, c - 1));
-    setTotalOptim((c) => Math.max(0, c - 1));
     startTransition(async () => {
+      applyBasicDelta(-1);
+      applyTotalDelta(-1);
       const res = await undoLastBasicForMatchAction(matchId);
-      if ("error" in res) {
-        setBasicCount((c) => c + 1);
-        setTotalOptim((c) => c + 1);
-        setErr(res.error);
-      }
+      if ("error" in res) setErr(res.error);
     });
   }
 
@@ -103,7 +99,7 @@ export function PourButton({
               <span className="bd-dot bd-country" /> {country} country
             </span>
           </div>
-          <div className="sub-meta tnum">{totalOptim} total all-time</div>
+          <div className="sub-meta tnum">{totalDrinks} total all-time</div>
         </div>
         <button
           ref={plusRef}
