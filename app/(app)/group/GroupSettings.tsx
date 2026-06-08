@@ -183,13 +183,13 @@ export function GroupSettings({
                           style={{ color: "var(--penalty)" }}
                           onClick={() => {
                             setOpenMenu(null);
-                            if (confirm(`Remove ${m.displayName} from the group?`)) {
+                            if (confirm(`Remove ${m.displayName} from the bracket?`)) {
                               go(() => removeAction(groupId, m.userId));
                             }
                           }}
                           disabled={pending}
                         >
-                          Remove from group
+                          Remove from bracket
                         </button>
                       </div>
                     ) : null}
@@ -231,15 +231,15 @@ export function GroupSettings({
             onClick={() => {
               const isSoleHost = meIsHost && hostCount <= 1;
               if (isSoleHost) {
-                alert("Promote someone or delete the group first - you're the only host.");
+                alert("Promote someone or delete the bracket first - you're the only host.");
                 return;
               }
-              if (confirm("Leave this group? Your past drinks and picks stay.")) {
+              if (confirm("Leave this bracket? Your drinks &amp; stamps still count in your others.")) {
                 go(() => leaveGroupAction(groupId));
               }
             }}
           >
-            Leave group
+            Leave bracket
           </button>
         </div>
       </div>
@@ -247,11 +247,11 @@ export function GroupSettings({
       {meIsHost ? (
         <div>
           <div className="section-label">
-            <span className="caps-label">Group settings (host)</span>
+            <span className="caps-label">Bracket settings (host)</span>
           </div>
           <div className="card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div>
-              <div className="caps-label" style={{ marginBottom: 6 }}>Group name</div>
+              <div className="caps-label" style={{ marginBottom: 6 }}>Bracket name</div>
               <div style={{ display: "flex", gap: 8 }}>
                 <input
                   className="input"
@@ -279,7 +279,7 @@ export function GroupSettings({
                 }
               }}
             >
-              Delete group
+              Delete bracket
             </button>
           </div>
         </div>

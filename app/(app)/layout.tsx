@@ -20,9 +20,11 @@ export default async function AppLayout({
   if (!memberships || memberships.length === 0) redirect("/onboarding");
 
   return (
-    <>
-      {children}
-      <TabBar />
-    </>
+    <div className="app-shell">
+      <div className="app-frame">
+        {children}
+        <TabBar />
+      </div>
+    </div>
   );
 }

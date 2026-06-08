@@ -21,17 +21,21 @@ export async function getGroupPicksForMatch(
 ): Promise<GroupPick[]> {
   const supabase = await createClient();
 
-  const [{ data: members }, { data: picks }] = await Promise.all([
-    supabase
-      .from("wc_memberships")
-      .select("user_id, display_name, role")
-      .eq("group_id", groupId),
-    supabase
-      .from("wc_picks")
-      .select("user_id, pick, stake, settled_at, payout_wcc, payout_wcp")
-      .eq("group_id", groupId)
-      .eq("match_id", matchId),
-  ]);
+  const { data: members } = await supabase
+    .from("wc_memberships")
+    .select("user_id, display_name, role")
+    .eq("group_id", groupId);
+  const memberIds = (members ?? []).map((m) => m.user_id);
+  // Picks are now user-level: a user's pick on a match is the same regardless
+  // of which bracket renders the panel. Filter by bracket *membership*, not
+  // by the pick row's stored group_id.
+  const { data: picks } = memberIds.length
+    ? await supabase
+        .from("wc_picks")
+        .select("user_id, pick, stake, settled_at, payout_wcc, payout_wcp")
+        .in("user_id", memberIds)
+        .eq("match_id", matchId)
+    : { data: [] as unknown[] };
 
   const pickByUser = new Map<string, Omit<GroupPick, "userId" | "displayName" | "role">>();
   for (const p of (picks ?? []) as {
@@ -99,6 +103,33 @@ export async function getWatchingNow(
     .eq("kind", "watching")
     .gte("created_at", sinceIso);
   return new Set(((data ?? []) as { user_id: string }[]).map((r) => r.user_id));
+}
+
+/** Per-beer pour counts for one user in one match. Key: beer_label, value: count.
+ *  Optionally restrict to a set of country codes (typically the match's two
+ *  teams) so the rendered rails and the basic/country breakdown agree. */
+export async function getUserBeerCountsForMatch(
+  userId: string,
+  matchId: number,
+  countryCodes?: string[],
+): Promise<Map<string, number>> {
+  const supabase = await createClient();
+  let q = supabase
+    .from("wc_drinks")
+    .select("beer_label,country_code")
+    .eq("user_id", userId)
+    .eq("match_id", matchId)
+    .not("beer_label", "is", null);
+  if (countryCodes && countryCodes.length > 0) {
+    q = q.in("country_code", countryCodes);
+  }
+  const { data } = await q;
+  const counts = new Map<string, number>();
+  for (const d of (data ?? []) as { beer_label: string | null }[]) {
+    if (!d.beer_label) continue;
+    counts.set(d.beer_label, (counts.get(d.beer_label) ?? 0) + 1);
+  }
+  return counts;
 }
 
 /** Country-beer drinks a user has done lifetime (for the stamp picker). */

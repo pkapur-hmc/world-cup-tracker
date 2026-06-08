@@ -1,71 +1,117 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
-import { pourAction, undoLastPourAction } from "./actions";
+import { useRef, useState, useTransition } from "react";
+import { pourAction, undoLastBasicForMatchAction } from "./actions";
+import { WccIcon } from "@/components/ui/CurrencyIcon";
 
-export function PourButton({ matchId }: { matchId: number | null }) {
+/**
+ * Match-drink stepper. Big number = total drinks this match (basic + country
+ * combined). Breakdown below splits it. Buttons act on the BASIC bucket only;
+ * country-specific drinks are added/removed in the BeerStampRail sheet.
+ *
+ * `countryCount` is owned by the server-rendered page and passed in fresh each
+ * render. We track only the basic bucket locally so the +1 / −1 buttons feel
+ * immediate without having to sync country state across components.
+ */
+export function PourButton({
+  matchId,
+  initialBasicCount,
+  countryCount,
+  totalAllTime,
+}: {
+  matchId: number;
+  initialBasicCount: number;
+  countryCount: number;
+  totalAllTime: number;
+}) {
+  const toNum = (n: number | undefined | null) =>
+    Number.isFinite(Number(n)) ? Number(n) : 0;
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
-  const [lastTapAt, setLastTapAt] = useState<number | null>(null);
-  const [now, setNow] = useState<number>(() => Date.now());
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const [basicCount, setBasicCount] = useState(() => toNum(initialBasicCount));
+  const [totalOptim, setTotalOptim] = useState(() => toNum(totalAllTime));
+  const plusRef = useRef<HTMLButtonElement>(null);
 
-  // Tick `now` while there's a recent tap, so the undo countdown derives in render.
-  useEffect(() => {
-    if (lastTapAt == null) return;
-    const t = setInterval(() => setNow(Date.now()), 15_000);
-    return () => clearInterval(t);
-  }, [lastTapAt]);
+  const country = toNum(countryCount);
+  const matchTotal = basicCount + country;
 
-  const minutesLeft =
-    lastTapAt != null
-      ? Math.max(0, 5 - Math.floor((now - lastTapAt) / 60_000))
-      : 0;
-  const showUndo = lastTapAt != null && minutesLeft > 0;
-
-  function tap() {
+  function plus() {
     setErr(null);
-    const ts = Date.now();
-    setLastTapAt(ts);
-    setNow(ts);
-    spawnFoamBubble(btnRef.current);
+    setBasicCount((c) => c + 1);
+    setTotalOptim((c) => c + 1);
+    spawnFoamBubble(plusRef.current);
     startTransition(async () => {
       const res = await pourAction({ matchId });
-      if ("error" in res) setErr(res.error);
+      if ("error" in res) {
+        setBasicCount((c) => Math.max(0, c - 1));
+        setTotalOptim((c) => Math.max(0, c - 1));
+        setErr(res.error);
+      }
     });
   }
 
-  function undo() {
+  function minus() {
     setErr(null);
+    if (basicCount <= 0) {
+      setErr("no basic drinks to remove (country beers use the section below)");
+      return;
+    }
+    setBasicCount((c) => Math.max(0, c - 1));
+    setTotalOptim((c) => Math.max(0, c - 1));
     startTransition(async () => {
-      const res = await undoLastPourAction();
-      if ("error" in res) setErr(res.error);
-      else setLastTapAt(null);
+      const res = await undoLastBasicForMatchAction(matchId);
+      if ("error" in res) {
+        setBasicCount((c) => c + 1);
+        setTotalOptim((c) => c + 1);
+        setErr(res.error);
+      }
     });
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "8px 0 4px" }}>
-      <button
-        ref={btnRef}
-        className="pour-btn"
-        onClick={tap}
-        disabled={pending}
-        aria-label="Pour a WCC"
-        style={{ opacity: pending ? 0.7 : 1, transition: "transform 180ms ease-out" }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: 56, lineHeight: 0.9 }}>+1</span>
-          <span className="pour-sub">WCC · Tap</span>
-        </div>
-      </button>
-      {showUndo ? (
-        <button className="link" onClick={undo} disabled={pending}>
-          undo last ({minutesLeft}m left)
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div className="pour-stepper">
+        <button
+          type="button"
+          className="pour-btn-circle minus"
+          onClick={minus}
+          disabled={pending || basicCount <= 0}
+          aria-label="Remove last basic drink"
+        >
+          −1
         </button>
-      ) : null}
+        <div className="core">
+          <div className="label-row">
+            <WccIcon size={16} /> Drinks this match
+          </div>
+          <div className="big-num tnum">{matchTotal}</div>
+          <div className="match-breakdown tnum">
+            <span className={basicCount > 0 ? "" : "dim"}>
+              <span className="bd-dot bd-basic" /> {basicCount} basic
+            </span>
+            <span className="bd-sep">·</span>
+            <span className={country > 0 ? "" : "dim"}>
+              <span className="bd-dot bd-country" /> {country} country
+            </span>
+          </div>
+          <div className="sub-meta tnum">{totalOptim} total all-time</div>
+        </div>
+        <button
+          ref={plusRef}
+          type="button"
+          className="pour-btn-circle plus"
+          onClick={plus}
+          disabled={pending}
+          aria-label="Log a basic drink"
+        >
+          +1
+        </button>
+      </div>
+      <div className="t-small muted" style={{ textAlign: "center" }}>
+        +1 / −1 tracks <strong>basic</strong> drinks. Use the country section below for specific beers.
+      </div>
       {err ? (
-        <div className="t-small" style={{ color: "var(--penalty)" }}>
+        <div className="t-small" style={{ color: "var(--penalty)", textAlign: "center" }}>
           {err}
         </div>
       ) : null}
@@ -75,21 +121,20 @@ export function PourButton({ matchId }: { matchId: number | null }) {
 
 function spawnFoamBubble(host: HTMLElement | null) {
   if (!host) return;
-  // Animate the button scale (no Framer Motion needed for one transform).
-  host.style.transform = "scale(1.04)";
+  host.style.transform = "scale(1.06)";
   setTimeout(() => {
     if (host) host.style.transform = "";
-  }, 180);
+  }, 160);
 
   const rect = host.getBoundingClientRect();
   const bubble = document.createElement("div");
-  const jitter = (Math.random() - 0.5) * 40;
+  const jitter = (Math.random() - 0.5) * 24;
   Object.assign(bubble.style, {
     position: "fixed",
     left: `${rect.left + rect.width / 2 - 8 + jitter}px`,
     top: `${rect.top + rect.height / 2 - 8}px`,
-    width: "16px",
-    height: "16px",
+    width: "14px",
+    height: "14px",
     borderRadius: "50%",
     background: "var(--foam-lit)",
     border: "1.5px solid var(--stout)",
@@ -99,10 +144,8 @@ function spawnFoamBubble(host: HTMLElement | null) {
     zIndex: "60",
   } as Partial<CSSStyleDeclaration>);
   document.body.appendChild(bubble);
-
-  // Trigger transition
   requestAnimationFrame(() => {
-    bubble.style.transform = "translateY(-160px) scale(0.6)";
+    bubble.style.transform = "translateY(-120px) scale(0.6)";
     bubble.style.opacity = "0";
   });
   setTimeout(() => bubble.remove(), 640);

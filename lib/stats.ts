@@ -14,8 +14,10 @@ import {
   type PickRow,
 } from "@/lib/scoring";
 
+/** Picks are tracked per-user (not per-bracket). A pick made from any
+ *  bracket counts toward the user's totals in every bracket they're in. */
 async function fetchPicks(
-  groupId: string,
+  _groupId: string,
   userId: string,
 ): Promise<PickRow[]> {
   const supabase = await createClient();
@@ -23,10 +25,8 @@ async function fetchPicks(
     const { data, error } = await supabase
       .from("wc_picks")
       .select("match_id,pick,stake,settled_at,payout_wcc,payout_wcp")
-      .eq("group_id", groupId)
       .eq("user_id", userId);
     if (error) {
-      // Table may not exist pre-migration; treat as no picks.
       if (/wc_picks/i.test(error.message)) return [];
       throw error;
     }
@@ -36,23 +36,22 @@ async function fetchPicks(
   }
 }
 
+/** Drinks are tracked per-user, not per-bracket. A pour in any bracket counts
+ *  toward the user's totals everywhere they appear. groupId is ignored. */
 async function fetchDrinks(
-  groupId: string,
+  _groupId: string,
   userId: string,
 ): Promise<DrinkRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("wc_drinks")
     .select("match_id,country_code")
-    .eq("group_id", groupId)
     .eq("user_id", userId);
   if (error) {
     if (/country_code/i.test(error.message)) {
-      // country_code column not yet added; refetch without it.
       const { data: data2, error: err2 } = await supabase
         .from("wc_drinks")
         .select("match_id")
-        .eq("group_id", groupId)
         .eq("user_id", userId);
       if (err2) throw err2;
       return (data2 ?? []).map((d) => ({

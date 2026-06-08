@@ -1,28 +1,12 @@
 /* Production overrides + screen-specific styles lifted from the design HTML files.
-   Keeps app/styles.css pristine so it can be diffed against design v2. */
+   Keeps app/styles.css pristine so it can be diffed against design v2.
 
-/* ---------- Layout: viewport positioning ---------- */
-.tabbar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 50;
-}
+   Layout positioning (tabbar centering, phone-width column) lives in
+   app/styles.css under .app-shell / .app-frame / .tabbar - don't duplicate
+   it here. */
+
 .screen {
   min-height: calc(100vh - 76px);
-}
-
-/* Center everything in a phone-width column on larger viewports. */
-@media (min-width: 480px) {
-  .appbar,
-  .screen,
-  .chip-row,
-  .tabbar {
-    max-width: 480px;
-    margin-left: auto;
-    margin-right: auto;
-  }
 }
 
 /* ---------- Picks (04-match-detail.html) ---------- */

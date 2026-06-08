@@ -2,11 +2,17 @@
  * Pure scoring functions for The World Cup Cup.
  * All numbers derived from raw rows - no aggregate columns to keep in sync.
  *
- *   WCC = drinks count - sum(stakes) + sum(payout_wcc from refunds)
+ *   WCC = basic drinks (1 each) + country beers (2 each)
+ *         - sum(stakes) + sum(payout_wcc from refunds)
  *   WCP = sum(payout_wcp on settled picks) + count(country-beer drinks)
  *   total = WCC + WCP
  *   stamps = distinct country_codes ever drunk (lifetime, not per-group)
+ *
+ * Country-beer multiplier: tracking a country-specific beer is harder and more
+ * intentional than just tapping +1, so it's worth twice as much WCC.
  */
+
+export const COUNTRY_BEER_WCC = 2;
 
 export type DrinkRow = {
   match_id: number | null;
@@ -41,7 +47,10 @@ export function drinksCount(drinks: DrinkRow[]): number {
 }
 
 export function wccBalance(drinks: DrinkRow[], picks: PickRow[]): number {
-  const earned = drinks.length;
+  const earned = drinks.reduce(
+    (s, d) => s + (d.country_code ? COUNTRY_BEER_WCC : 1),
+    0,
+  );
   const stakesSpent = picks.reduce((s, p) => s + p.stake, 0);
   const refunds = picks.reduce((s, p) => s + p.payout_wcc, 0);
   return earned - stakesSpent + refunds;

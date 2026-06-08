@@ -9,13 +9,16 @@ import {
   getDrinksForMatch,
   getWatchingNow,
   getUserStampedBeers,
+  getUserBeerCountsForMatch,
 } from "@/lib/picks";
 import { FLAG_EMOJI } from "@/data/flag-emojis";
 import { COUNTRY_BEERS } from "@/data/country-beers";
+import { colorFor } from "@/data/country-colors";
 import { PourButton } from "./PourButton";
 import { BeerStampRail } from "./BeerStampRail";
 import { WatchingNow, type WatchingMember } from "./WatchingNow";
 import { PickAndStake } from "./PickAndStake";
+import { WccIcon, WcpIcon } from "@/components/ui/CurrencyIcon";
 
 function flag(code: string | null) {
   return code ? FLAG_EMOJI[code] ?? "" : "";
@@ -27,6 +30,20 @@ function timeOfDay(iso: string) {
     minute: "2-digit",
     hour12: false,
   });
+}
+
+function dayLabel(iso: string): string {
+  const d = new Date(iso);
+  const today = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(today.getDate() + 1);
+  const sameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+  if (sameDay(d, today)) return "Today";
+  if (sameDay(d, tomorrow)) return "Tomorrow";
+  return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
 }
 
 function countdownTo(iso: string) {
@@ -113,10 +130,14 @@ function MatchHero({ match }: { match: Match }) {
       {match.status === "scheduled" ? (
         <>
           <div className="t-h1 tnum" style={{ marginTop: 18 }}>{countdownTo(match.kickoff_at)}</div>
-          <div className="t-small muted" style={{ marginTop: 4 }}>
-            {match.venue ? `${match.venue} · ` : ""}
-            {timeOfDay(match.kickoff_at)}
+          <div className="t-sub" style={{ marginTop: 6 }}>
+            {dayLabel(match.kickoff_at)} · {timeOfDay(match.kickoff_at)}
           </div>
+          {match.venue ? (
+            <div className="t-small muted" style={{ marginTop: 2 }}>
+              {match.venue}
+            </div>
+          ) : null}
         </>
       ) : match.status === "final" ? (
         <div className="t-small muted" style={{ marginTop: 14 }}>
@@ -204,7 +225,9 @@ function PostMatchSummary({
     return (
       <div className="card empty-block" style={{ textAlign: "center" }}>
         <div className="empty-lead">You missed this one.</div>
-        <div className="empty-sub">No pick locked - no WCP earned.</div>
+        <div className="empty-sub" style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center" }}>
+          No pick locked - no <WcpIcon size={14} /> WCP earned.
+        </div>
       </div>
     );
   }
@@ -247,9 +270,15 @@ function PostMatchSummary({
           <div className="t-small muted">Payout</div>
           <div
             className="t-display tnum"
-            style={{ fontSize: 32, color: correct ? "var(--pitch)" : "var(--penalty)" }}
+            style={{ fontSize: 32, color: correct ? "var(--pitch)" : "var(--penalty)", display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            {correct ? `+${myPick.payout_wcp} WCP` : myPick.stake > 0 ? `-${myPick.stake} WCC` : "0"}
+            {correct ? (
+              <>+{myPick.payout_wcp} <WcpIcon size={22} /></>
+            ) : myPick.stake > 0 ? (
+              <>-{myPick.stake} <WccIcon size={22} /></>
+            ) : (
+              "0"
+            )}
           </div>
         </div>
       </div>
@@ -302,7 +331,7 @@ export default async function MatchPage({
 
   // Branch by status.
   if (match.status === "live") {
-    return <LiveView match={match} groupId={member.groupId} userId={member.userId} />;
+    return <LiveView match={match} groupId={member.groupId} groupName={member.groupName} userId={member.userId} />;
   }
   if (match.status === "final") {
     return <PostView match={match} groupId={member.groupId} userId={member.userId} />;
@@ -314,25 +343,47 @@ export default async function MatchPage({
 async function LiveView({
   match,
   groupId,
+  groupName,
   userId,
 }: {
   match: Match;
   groupId: string;
+  groupName: string;
   userId: string;
 }) {
-  const [stats, picks, drinkCounts, watching, stampedBeers] = await Promise.all([
+  const teamCodes = [match.team_a_code, match.team_b_code].filter(
+    (c): c is string => !!c,
+  );
+  const [stats, picks, drinkCounts, watching, stampedBeers, beerCounts] = await Promise.all([
     getMemberStats(groupId, userId),
     getGroupPicksForMatch(groupId, match.id),
     getDrinksForMatch(groupId, match.id),
     getWatchingNow(groupId, match.id),
     getUserStampedBeers(userId),
+    getUserBeerCountsForMatch(userId, match.id, teamCodes),
   ]);
 
   const myPick = picks.find((p) => p.userId === userId);
-  const myDrinks = drinkCounts.get(userId) ?? 0;
+  const myDrinks = Number(drinkCounts.get(userId) ?? 0);
+  const myBeerCountThisMatch = Number(
+    Array.from(beerCounts.values()).reduce((a, b) => Number(a) + Number(b), 0),
+  );
+  const myBasicCountThisMatch = Math.max(
+    0,
+    (Number.isFinite(myDrinks) ? myDrinks : 0) -
+      (Number.isFinite(myBeerCountThisMatch) ? myBeerCountThisMatch : 0),
+  );
 
   const beersA = match.team_a_code ? COUNTRY_BEERS[match.team_a_code] ?? [] : [];
   const beersB = match.team_b_code ? COUNTRY_BEERS[match.team_b_code] ?? [] : [];
+
+  const pickedCode =
+    myPick?.pick === "A"
+      ? match.team_a_code
+      : myPick?.pick === "B"
+        ? match.team_b_code
+        : null;
+  const accent = colorFor(pickedCode);
 
   const members: WatchingMember[] = picks.map((p) => ({
     userId: p.userId,
@@ -359,8 +410,10 @@ async function LiveView({
             alignItems: "center",
             justifyContent: "space-between",
             padding: "10px 14px",
-            background: "var(--paper)",
+            background: pickedCode ? accent.tint : "var(--paper)",
             borderRadius: "var(--r-md)",
+            borderLeft: pickedCode ? `4px solid ${accent.primary}` : undefined,
+            color: accent.ink,
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -383,14 +436,18 @@ async function LiveView({
             )}
           </div>
           {myPick?.stake ? (
-            <span className="badge stake tnum">{myPick.stake} WCC staked</span>
+            <span className="badge stake tnum" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <WccIcon size={12} /> {myPick.stake} staked
+            </span>
           ) : null}
         </div>
 
-        <PourButton matchId={match.id} />
-        <div className="t-small muted tnum" style={{ textAlign: "center", marginTop: -4 }}>
-          {myDrinks} this match · {stats.drinks} total
-        </div>
+        <PourButton
+          matchId={match.id}
+          initialBasicCount={myBasicCountThisMatch}
+          countryCount={myBeerCountThisMatch}
+          totalAllTime={stats.drinks}
+        />
 
         {match.team_a_code ? (
           <BeerStampRail
@@ -400,6 +457,7 @@ async function LiveView({
             flag={flag(match.team_a_code)}
             beers={beersA}
             claimedNames={stampedBeers}
+            matchCounts={beerCounts}
           />
         ) : null}
 
@@ -411,10 +469,11 @@ async function LiveView({
             flag={flag(match.team_b_code)}
             beers={beersB}
             claimedNames={stampedBeers}
+            matchCounts={beerCounts}
           />
         ) : null}
 
-        <WatchingNow matchId={match.id} groupId={groupId} initialMembers={members} />
+        <WatchingNow matchId={match.id} groupId={groupId} groupName={groupName} initialMembers={members} />
 
         <div style={{ height: 8 }} />
       </div>

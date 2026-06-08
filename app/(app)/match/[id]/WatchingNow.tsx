@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { watchingPingAction } from "./actions";
+import { WccIcon } from "@/components/ui/CurrencyIcon";
 
 export type WatchingMember = {
   userId: string;
@@ -16,10 +17,12 @@ export type WatchingMember = {
 export function WatchingNow({
   matchId,
   groupId,
+  groupName,
   initialMembers,
 }: {
   matchId: number;
   groupId: string;
+  groupName: string;
   initialMembers: WatchingMember[];
 }) {
   const [members, setMembers] = useState<WatchingMember[]>(initialMembers);
@@ -87,9 +90,11 @@ export function WatchingNow({
   return (
     <div className="card">
       <div className="section-label" style={{ marginBottom: 6 }}>
-        <span className="caps-label">Watching now</span>
-        <span className="t-small muted">
-          {watchingCount} of {members.length} · {totalDrinks} drinks
+        <span className="caps-label" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          🏆 In {groupName}
+        </span>
+        <span className="t-small muted" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          {watchingCount} of {members.length} watching · <WccIcon size={12} /> {totalDrinks}
         </span>
       </div>
       {members
@@ -122,7 +127,16 @@ export function WatchingNow({
                   />
                 ) : null}
               </span>
-              <span className="count">{m.watching ? m.drinkCount : "-"}</span>
+              <span className="count" style={{ display: "inline-flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
+                {m.watching ? (
+                  <>
+                    <WccIcon size={14} />
+                    {m.drinkCount}
+                  </>
+                ) : (
+                  "-"
+                )}
+              </span>
             </div>
           );
         })}

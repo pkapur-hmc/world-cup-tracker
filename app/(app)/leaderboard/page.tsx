@@ -1,16 +1,25 @@
 import Link from "next/link";
-import { getCurrentMembership } from "@/lib/membership";
+import { getAllMemberships, getCurrentMembership } from "@/lib/membership";
+import { BracketPicker } from "./BracketPicker";
 import { createClient } from "@/lib/supabase/server";
 import { computeMemberStats, assignFlavorLabels, type LeaderboardRow, type MatchLite, type DrinkRow, type PickRow } from "@/lib/scoring";
+import { WccIcon, WcpIcon } from "@/components/ui/CurrencyIcon";
+import { InfoChip } from "@/components/ui/InfoChip";
 
 type SortKey = "total" | "drinks" | "wcc" | "wcp" | "stamps";
 
-const SORTS: { key: SortKey; label: string }[] = [
-  { key: "total", label: "Total" },
-  { key: "drinks", label: "Drinks" },
-  { key: "wcc", label: "WCC" },
-  { key: "wcp", label: "WCP" },
-  { key: "stamps", label: "Stamps" },
+type SortDef = {
+  key: SortKey;
+  label: string;
+  icon: React.ReactNode | null;
+  glyph: string | null;
+};
+const SORTS: SortDef[] = [
+  { key: "total", label: "Total", icon: null, glyph: "★" },
+  { key: "drinks", label: "Drinks", icon: null, glyph: "🍻" },
+  { key: "wcc", label: "WCC", icon: <WccIcon size={14} />, glyph: null },
+  { key: "wcp", label: "WCP", icon: <WcpIcon size={14} />, glyph: null },
+  { key: "stamps", label: "Stamps", icon: null, glyph: "🛂" },
 ];
 
 export default async function LeaderboardPage({
@@ -21,23 +30,36 @@ export default async function LeaderboardPage({
   const params = await searchParams;
   const sort: SortKey = (SORTS.find((s) => s.key === params.sort)?.key as SortKey) ?? "total";
 
-  const member = await getCurrentMembership();
+  const [member, allMemberships] = await Promise.all([
+    getCurrentMembership(),
+    getAllMemberships(),
+  ]);
   if (!member) return null;
 
   const supabase = await createClient();
-  const [{ data: members }, { data: drinks }, { data: picks }, { data: matches }] = await Promise.all([
-    supabase
-      .from("wc_memberships")
-      .select("user_id, display_name, role")
-      .eq("group_id", member.groupId),
-    supabase
-      .from("wc_drinks")
-      .select("user_id, match_id, country_code")
-      .eq("group_id", member.groupId),
-    supabase
-      .from("wc_picks")
-      .select("user_id, match_id, pick, stake, settled_at, payout_wcc, payout_wcp")
-      .eq("group_id", member.groupId),
+  // 1. Bracket members
+  const { data: members } = await supabase
+    .from("wc_memberships")
+    .select("user_id, display_name, role")
+    .eq("group_id", member.groupId);
+  const memberIds = (members ?? []).map((m) => m.user_id);
+
+  // 2. Drinks are user-level (a pour in any bracket counts for that user
+  //    across every bracket they're in), so fetch by user_id, not group.
+  //    Picks stay per-bracket: each bracket can have its own stake/pick choice.
+  const [{ data: drinks }, { data: picks }, { data: matches }] = await Promise.all([
+    memberIds.length
+      ? supabase
+          .from("wc_drinks")
+          .select("user_id, match_id, country_code")
+          .in("user_id", memberIds)
+      : Promise.resolve({ data: [] }),
+    memberIds.length
+      ? supabase
+          .from("wc_picks")
+          .select("user_id, match_id, pick, stake, settled_at, payout_wcc, payout_wcp")
+          .in("user_id", memberIds)
+      : Promise.resolve({ data: [] }),
     supabase.from("wc_matches").select("id, team_a_code, team_b_code"),
   ]);
 
@@ -127,22 +149,36 @@ export default async function LeaderboardPage({
     <>
       <div className="appbar">
         <div style={{ flex: 1 }}>
-          <div className="t-h1">Leaderboard</div>
+          <div className="t-h1" style={{ display: "inline-flex", alignItems: "center" }}>
+            Leaderboard
+            <InfoChip label="How does the leaderboard rank?">
+              Rank = <strong>Total</strong>, which is <strong>WCC + WCP</strong>. Tap a sort chip to view by any column. Ties show as <em>T-rank</em>.
+            </InfoChip>
+          </div>
           <div className="t-small muted">
-            {member.groupName} · {member.memberCount} in
+            Your bracket · {member.memberCount} in
           </div>
         </div>
       </div>
 
       <div className="screen" style={{ gap: 12 }}>
+        <BracketPicker
+          options={allMemberships.map((g) => ({
+            groupId: g.groupId,
+            groupName: g.groupName,
+            memberCount: g.memberCount,
+          }))}
+          activeId={member.groupId}
+        />
         <div className="chip-row">
           {SORTS.map((s) => (
             <Link
               key={s.key}
               href={s.key === "total" ? "/leaderboard" : `/leaderboard?sort=${s.key}`}
               className={`chip ${sort === s.key ? "is-active" : ""}`}
-              style={{ textDecoration: "none" }}
+              style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
             >
+              {s.icon ?? (s.glyph ? <span aria-hidden>{s.glyph}</span> : null)}
               {s.label}
             </Link>
           ))}
@@ -171,14 +207,25 @@ export default async function LeaderboardPage({
                   {labels.get(r.userId) ? (
                     <div className="flavor">{labels.get(r.userId)}</div>
                   ) : null}
-                  <div className="mini-stats tnum">
-                    {r.stats.drinks} · {r.stats.wcc} · {r.stats.wcp} · 🛂 {r.stats.stamps}
+                  <div className="mini-stats tnum" style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <span>🍻 {r.stats.drinks}</span>
+                    <span>·</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><WccIcon size={11} /> {r.stats.wcc}</span>
+                    <span>·</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><WcpIcon size={11} /> {r.stats.wcp}</span>
+                    <span>·</span>
+                    <span>🛂 {r.stats.stamps}</span>
                   </div>
                 </div>
                 <div
                   className="total-num"
-                  style={isYou ? { color: "var(--burn)" } : undefined}
+                  style={{ color: isYou ? "var(--burn)" : undefined, display: "inline-flex", alignItems: "center", gap: 6 }}
                 >
+                  {sort === "wcc" ? <WccIcon size={20} /> : null}
+                  {sort === "wcp" ? <WcpIcon size={20} /> : null}
+                  {sort === "drinks" ? <span aria-hidden style={{ fontSize: 18 }}>🍻</span> : null}
+                  {sort === "stamps" ? <span aria-hidden style={{ fontSize: 18 }}>🛂</span> : null}
+                  {sort === "total" ? <span aria-hidden style={{ fontSize: 18 }}>★</span> : null}
                   {sortVal(r)}
                 </div>
               </div>

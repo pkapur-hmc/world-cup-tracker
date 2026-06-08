@@ -18,7 +18,7 @@ const bricolage = Bricolage_Grotesque({
 
 export const metadata: Metadata = {
   title: "The World Cup Cup",
-  description: "Pour, pick, stamp - track your group through the 2026 World Cup.",
+  description: "Pour, pick, stamp - track your bracket through the 2026 World Cup.",
 };
 
 export default function RootLayout({

@@ -56,6 +56,29 @@ html, body {
 .muted { color: var(--stout-70); }
 .dim   { color: var(--stout-55); }
 
+/* ---------- App shell (mobile-width column on desktop) ----------
+   On large screens we render a centered "phone-width" column with gutters
+   so the app looks the same on web as on mobile. The tabbar and bottom
+   sheets are positioned *inside* the frame (position: absolute) so they
+   always line up under the frame regardless of viewport sizing quirks. */
+.app-shell {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: radial-gradient(ellipse at top, rgba(216, 136, 23, 0.10), transparent 60%), var(--foam);
+}
+.app-frame {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  background: var(--foam);
+  box-shadow: 0 0 0 1px var(--stout-12), 0 24px 60px -20px rgba(40, 22, 4, 0.18);
+  display: flex;
+  flex-direction: column;
+}
+
 /* ---------- Phone frame ---------- */
 .stage {
   min-height: 100vh;
@@ -150,38 +173,68 @@ html, body {
   gap: 14px;
 }
 
-/* ---------- Bottom tab bar ---------- */
+/* ---------- Bottom tab bar ----------
+   Anchored to the inside-bottom of .app-frame (sticks under the phone
+   column on desktop). The 76px height + padding-bottom is reserved by
+   .screen so content never sits behind it. */
 .tabbar {
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
+  position: sticky;
+  bottom: 0;
+  width: 100%;
   height: 76px;
-  padding: 8px 16px 22px;
+  padding: 8px 8px 22px;
   background: var(--foam-lit);
   border-top: 1px solid var(--stout-12);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 4px;
+  z-index: 20;
+  margin-top: auto;
 }
+.tabbar.tabbar-5 { grid-template-columns: repeat(5, 1fr); }
+
+/* button-as-tab needs explicit resets so it matches <Link> tabs exactly */
 .tab {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  width: 100%;
+
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
+
   font-family: var(--ff-ui);
   font-weight: 700;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.04em;
   color: var(--stout-55);
   text-transform: uppercase;
   text-decoration: none;
   border-radius: var(--r-sm);
+  line-height: 1.1;
 }
-.tab svg { display: block; }
+.tab .tab-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 28px;
+  border-radius: 999px;
+  transition: background 140ms ease, color 140ms ease;
+}
+.tab .tab-icon svg { display: block; }
+.tab .tab-label { display: block; }
+
 .tab.is-active { color: var(--stout); }
-.tab.is-active .tab-dot {
-  width: 4px; height: 4px; border-radius: 50%; background: var(--pour);
-  margin-top: 1px;
+.tab.is-active .tab-icon {
+  background: var(--paper);
+  color: var(--stout);
 }
 
 /* ---------- Cards ---------- */
@@ -360,11 +413,13 @@ html, body {
 /* ---------- Live drink bar ---------- */
 .drink-row {
   display: grid;
-  grid-template-columns: 24px 1fr auto;
+  grid-template-columns: 24px minmax(60px, 1fr) minmax(40px, 110px) 32px;
   gap: 10px;
   align-items: center;
   padding: 8px 0;
+  min-width: 0;
 }
+.drink-row .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .drink-row .flag { font-size: 18px; }
 .drink-row .who { font-family: var(--ff-ui); font-weight: 700; font-size: 14px; }
 .drink-row .bar-wrap {
@@ -538,26 +593,31 @@ html, body {
 }
 .stamp.unclaimed .stamp-flag { filter: grayscale(1); opacity: 0.5; }
 
-/* country chip (in stamp row) */
+/* country chip (in stamp row) - tappable pour button */
 .beer-chip {
   flex: 0 0 auto;
-  width: 84px;
-  padding: 10px 8px;
+  width: 88px;
+  padding: 12px 8px 10px;
   border-radius: var(--r-md);
   background: var(--bubble);
-  border: 1px solid var(--stout-12);
+  border: 1.5px solid var(--stout-12);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
   font-size: 11px;
   text-align: center;
+  transition: background 140ms ease, border-color 140ms ease, transform 160ms ease, box-shadow 160ms ease;
+  -webkit-tap-highlight-color: transparent;
 }
+.beer-chip:hover { background: var(--paper); border-color: var(--stout-35); }
+.beer-chip:active { transform: scale(0.97); }
 .beer-chip .bottle {
   width: 26px; height: 50px;
   border-radius: 6px 6px 8px 8px;
   background: linear-gradient(180deg, #2A4A1E 0%, #1C140C 100%);
   position: relative;
+  transition: filter 140ms ease;
 }
 .beer-chip .bottle::before {
   content: ''; position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
@@ -570,22 +630,417 @@ html, body {
 }
 .beer-chip .name { font-family: var(--ff-ui); font-weight: 700; color: var(--stout); font-size: 11px; line-height: 1.1; }
 .beer-chip .country { font-size: 10px; color: var(--stout-55); }
-.beer-chip.claimed {
-  background: var(--pour);
-  border-color: var(--burn);
-}
-.beer-chip.claimed::after {
-  content: 'STAMPED';
+
+/* per-match count pill in the top-right corner */
+.beer-chip .chip-count {
   position: absolute;
-  top: 6px; right: -4px;
+  top: -6px; right: -6px;
+  min-width: 22px; height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: var(--pour);
+  color: var(--stout);
+  border: 1.5px solid var(--stout);
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(40,22,4,0.15);
+  animation: chipCountPop 240ms ease-out;
+}
+@keyframes chipCountPop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* logged-this-match state */
+.beer-chip.tapped {
+  background: var(--bubble);
+  border-color: var(--pour);
+  box-shadow: 0 0 0 2px rgba(229, 156, 32, 0.18);
+}
+
+/* lifetime-stamped marker (passport) */
+.beer-chip.stamped::before {
+  content: '🛂';
+  position: absolute;
+  bottom: 4px; left: 6px;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* ---------- WCC / WCP icons ---------- */
+.cur-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  vertical-align: -2px;
+}
+.cur-icon.wcc { color: var(--burn); }
+.cur-icon.wcp { color: var(--pitch); }
+
+.cur-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------- Team page: passport stamp tile ---------- */
+.stamp-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px 10px;
+  border-radius: var(--r-md);
+  border: 2px dashed var(--stout-35);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+  text-align: center;
+  position: relative;
+}
+.stamp-tile.claimed {
+  border-style: solid;
+  border-width: 2px;
+  box-shadow: 0 2px 6px -2px rgba(40,22,4,0.2);
+}
+.stamp-tile:active { transform: scale(0.98); }
+.stamp-tile .stamp-name {
+  font-family: var(--ff-ui);
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1.15;
+  margin-top: 2px;
+  /* truncate to two lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---------- Team page: per-match journal row ---------- */
+.journal-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  padding: 12px 14px;
+  text-decoration: none;
+  color: inherit;
+  align-items: center;
+}
+.journal-chips {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.j-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-family: var(--ff-ui);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.j-chip.dim {
+  background: var(--stout-12);
+  color: var(--stout-55);
+}
+
+/* ---------- Help prose (inside HelpSheet) ---------- */
+.help-prose { font-size: 14px; line-height: 1.5; color: var(--stout-70); }
+.help-prose p { margin: 0 0 8px; }
+.help-prose p:last-child { margin-bottom: 0; }
+.help-prose ul { margin: 4px 0 8px 18px; padding: 0; }
+.help-prose li { margin: 4px 0; }
+.help-prose strong { color: var(--stout); }
+.help-prose .muted { color: var(--stout-55); }
+
+/* ---------- Info chip (?) ---------- */
+.info-chip-btn {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--stout-12);
+  color: var(--stout-70);
+  border: none;
+  padding: 0;
+  margin-left: 4px;
+  font-family: var(--ff-ui);
+  font-weight: 700;
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+  vertical-align: middle;
+}
+.info-chip-btn:hover { background: var(--stout-35); color: var(--stout); }
+.info-chip-btn[aria-expanded="true"] { background: var(--stout); color: var(--foam-lit); }
+
+/* Portal-rendered popover: absolutely positioned in document space. */
+.info-chip-pop {
+  position: fixed;
+  z-index: 90;
+  width: max-content;
+  max-width: min(260px, calc(100vw - 24px));
+  padding: 10px 12px;
   background: var(--stout);
   color: var(--foam-lit);
-  font-size: 8px;
+  border-radius: var(--r-md);
+  font-family: var(--ff-ui);
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.45;
+  text-transform: none;
+  letter-spacing: 0;
+  box-shadow: 0 12px 24px -8px rgba(40, 22, 4, 0.45);
+  text-align: left;
+  white-space: normal;
+}
+.info-chip-pop::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: var(--arrow-left, 12px);
+  width: 8px; height: 8px;
+  background: var(--stout);
+  transform: rotate(45deg);
+}
+.info-chip-pop a, .info-chip-pop strong { color: var(--pour); }
+.info-chip-pop ul { margin: 4px 0 4px 16px; padding: 0; }
+.info-chip-pop p { margin: 0 0 4px; }
+.info-chip-pop p:last-child { margin-bottom: 0; }
+
+/* ---------- Bottom sheet ----------
+   Root is fixed and width-clamped to the phone frame; the backdrop is its
+   own fixed element that covers the whole viewport so taps anywhere outside
+   the sheet dismiss it. */
+.sheet-root {
+  position: fixed;
+  z-index: 80;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  pointer-events: none;
+}
+.sheet-root.is-open { pointer-events: auto; }
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(28, 20, 12, 0.45);
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+.sheet-root.is-open .sheet-backdrop { opacity: 1; }
+.sheet {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  background: var(--foam);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  padding: 8px 20px 28px;
+  box-shadow: 0 -16px 40px -10px rgba(40,22,4,0.25);
+  transform: translateY(110%);
+  transition: transform 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  max-height: 88vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  touch-action: pan-y;
+}
+.sheet-root.is-open .sheet { transform: translateY(0); }
+.sheet-handle-zone {
+  display: grid;
+  place-items: center;
+  padding: 10px 0 6px;
+  cursor: grab;
+  touch-action: none;
+}
+.sheet-handle-zone:active { cursor: grabbing; }
+.sheet-handle {
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--stout-35);
+}
+.sheet-title {
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  padding: 4px 4px 10px;
+}
+.sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 4px;
+}
+
+/* ---------- Quick-pour stepper ---------- */
+.pour-stepper {
+  display: grid;
+  grid-template-columns: 64px 1fr 64px;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border-radius: var(--r-md);
+  background: var(--bubble);
+  border: 1.5px solid var(--stout-12);
+}
+.pour-stepper .core { text-align: center; }
+.pour-stepper .label-row {
+  font-family: var(--ff-ui);
   font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 2px 6px;
-  border-radius: 4px;
-  transform: rotate(8deg);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--stout-55);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+}
+.pour-stepper .big-num {
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 64px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  margin-top: 6px;
+}
+.pour-stepper .match-breakdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-family: var(--ff-ui);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--stout-70);
+}
+.pour-stepper .match-breakdown .bd-sep { color: var(--stout-35); font-weight: 500; }
+.pour-stepper .match-breakdown .dim { color: var(--stout-35); }
+.pour-stepper .match-breakdown .bd-dot {
+  display: inline-block;
+  width: 8px; height: 8px; border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: 1px;
+}
+.pour-stepper .match-breakdown .bd-basic { background: var(--stout); }
+.pour-stepper .match-breakdown .bd-country { background: var(--pour); border: 1.5px solid var(--stout); }
+.pour-stepper .sub-meta {
+  font-family: var(--ff-ui);
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--stout-55);
+  margin-top: 6px;
+}
+.pour-btn-circle {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  border: 2px solid var(--stout);
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid; place-items: center;
+  transition: transform 140ms ease, background 140ms ease;
+}
+.pour-btn-circle.plus  { background: var(--pour); color: var(--stout); }
+.pour-btn-circle.plus:hover  { background: var(--honey); }
+.pour-btn-circle.plus:active { transform: scale(0.96); background: var(--burn); }
+.pour-btn-circle.minus { background: var(--paper); color: var(--stout); }
+.pour-btn-circle.minus:hover  { background: var(--stout-12); }
+.pour-btn-circle.minus:active { transform: scale(0.96); }
+.pour-btn-circle[disabled] { opacity: 0.4; cursor: not-allowed; }
+
+/* country beer launcher button */
+.country-beer-launcher {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: var(--bubble);
+  border: 1.5px solid var(--stout-12);
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+}
+.country-beer-launcher:hover { background: var(--paper); }
+.country-beer-launcher:active { transform: scale(0.99); }
+.country-beer-launcher .cbl-lead { display: flex; align-items: center; gap: 10px; }
+.country-beer-launcher .cbl-flag { font-size: 24px; line-height: 1; }
+.country-beer-launcher .cbl-title { font-family: var(--ff-ui); font-weight: 700; font-size: 15px; }
+.country-beer-launcher .cbl-sub { font-size: 12px; color: var(--stout-70); }
+.country-beer-launcher .cbl-count {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--burn);
+}
+.country-beer-launcher .chev { color: var(--stout-35); font-family: var(--ff-display); font-weight: 600; }
+
+/* sheet: confirm row showing total to add and stepper */
+.sheet-confirm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--r-md);
+  background: var(--paper);
+}
+
+/* ---------- Balance banner (above stake stepper) ---------- */
+.balance-banner {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, var(--bubble) 0%, var(--paper) 100%);
+  border: 1.5px solid var(--stout-12);
+  border-radius: var(--r-md);
+}
+.balance-banner .bal-icon {
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--foam-lit);
+  border: 1.5px solid var(--stout-12);
+  color: var(--burn);
+}
+.balance-banner .bal-text { min-width: 0; }
+.balance-banner .bal-right {
+  text-align: right;
+  max-width: 130px;
+  line-height: 1.25;
 }
 
 /* horizontal scroll row */

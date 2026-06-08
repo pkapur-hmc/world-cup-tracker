@@ -29,10 +29,11 @@ function dayLabel(dayIso: string): { emph: string | null; rest: string } {
     month: "long",
     day: "numeric",
   });
+  const weekday = dLocal.toLocaleDateString(undefined, { weekday: "long" });
   if (diffDays === 0) return { emph: "Today", rest: ` · ${monthDay}` };
   if (diffDays === 1) return { emph: "Tomorrow", rest: ` · ${monthDay}` };
   if (diffDays === -1) return { emph: "Yesterday", rest: ` · ${monthDay}` };
-  return { emph: null, rest: monthDay };
+  return { emph: weekday, rest: ` · ${monthDay}` };
 }
 
 function MatchCard({ match }: { match: Match }) {

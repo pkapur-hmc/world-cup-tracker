@@ -42,6 +42,78 @@ export async function pourAction(args: PourArgs): Promise<{ ok: true } | { error
   return { ok: true };
 }
 
+/** Delete the user's most recent BASIC drink for a match (no country / no beer label).
+ *  Used by the basic-drink stepper "−1" button. No time window - this is the
+ *  user explicitly undoing a tap they regret, not a recency-only safety net. */
+export async function undoLastBasicForMatchAction(
+  matchId: number,
+): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "not signed in" };
+
+  const { data: last, error: selErr } = await supabase
+    .from("wc_drinks")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("match_id", matchId)
+    .is("country_code", null)
+    .is("beer_label", null)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (selErr) return { error: selErr.message };
+  if (!last || last.length === 0) return { error: "no basic drinks to remove" };
+
+  const { error: delErr } = await supabase
+    .from("wc_drinks")
+    .delete()
+    .eq("id", (last[0] as { id: string }).id);
+  if (delErr) return { error: delErr.message };
+
+  revalidatePath(`/match/${matchId}`);
+  revalidatePath("/");
+  return { ok: true };
+}
+
+/** Delete the user's most recent drink for a specific country-beer in a match.
+ *  Used by the country-beer stepper "−" button. No time window - decrementing
+ *  a logged beer is always allowed (you logged it, you can remove it). */
+export async function undoLastBeerAction(args: {
+  matchId: number;
+  countryCode: string;
+  beerLabel: string;
+}): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "not signed in" };
+
+  const { data: last, error: selErr } = await supabase
+    .from("wc_drinks")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("match_id", args.matchId)
+    .eq("country_code", args.countryCode)
+    .eq("beer_label", args.beerLabel)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (selErr) return { error: selErr.message };
+  if (!last || last.length === 0) return { error: "nothing to remove" };
+
+  const { error: delErr } = await supabase
+    .from("wc_drinks")
+    .delete()
+    .eq("id", (last[0] as { id: string }).id);
+  if (delErr) return { error: delErr.message };
+
+  revalidatePath(`/match/${args.matchId}`);
+  revalidatePath("/");
+  return { ok: true };
+}
+
 /** Delete the user's most recent drink within the 5-minute undo window. */
 export async function undoLastPourAction(): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();

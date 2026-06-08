@@ -3,7 +3,14 @@ import Image from "next/image";
 import { getCurrentMembership } from "@/lib/membership";
 import { getLiveMatches, getNextMatch, type Match } from "@/lib/fixtures";
 import { getMemberStats, getRankInGroup } from "@/lib/stats";
+import { getGroupPicksForMatch } from "@/lib/picks";
 import { FLAG_EMOJI } from "@/data/flag-emojis";
+import { colorFor } from "@/data/country-colors";
+import { WccIcon, WcpIcon } from "@/components/ui/CurrencyIcon";
+import { InfoChip } from "@/components/ui/InfoChip";
+import { HomeInviteCard } from "./HomeInviteCard";
+
+type MyPick = { pick: "A" | "D" | "B"; stake: number } | null;
 
 function flag(code: string | null) {
   if (!code) return "";
@@ -33,6 +40,20 @@ function timeOfDay(iso: string): string {
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
   return `${hh}:${mm}`;
+}
+
+function dayLabel(iso: string): string {
+  const d = new Date(iso);
+  const today = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(today.getDate() + 1);
+  const sameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+  if (sameDay(d, today)) return "Today";
+  if (sameDay(d, tomorrow)) return "Tomorrow";
+  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 }
 
 function LiveBlock({ match, watching }: { match: Match; watching: number }) {
@@ -90,14 +111,48 @@ function LiveBlock({ match, watching }: { match: Match; watching: number }) {
   );
 }
 
-function NextBlock({ match }: { match: Match }) {
+function NextBlock({ match, myPick }: { match: Match; myPick: MyPick }) {
+  const pickFlag =
+    myPick?.pick === "A"
+      ? flag(match.team_a_code)
+      : myPick?.pick === "B"
+        ? flag(match.team_b_code)
+        : myPick?.pick === "D"
+          ? "•"
+          : "";
+  const pickLabel =
+    myPick?.pick === "A"
+      ? match.team_a_code ?? "A"
+      : myPick?.pick === "B"
+        ? match.team_b_code ?? "B"
+        : myPick?.pick === "D"
+          ? "Draw"
+          : "";
+  const pickedCode =
+    myPick?.pick === "A"
+      ? match.team_a_code
+      : myPick?.pick === "B"
+        ? match.team_b_code
+        : null;
+  const accent = colorFor(pickedCode);
+
   return (
     <>
       <div className="section-label" style={{ marginTop: 8 }}>
         <span className="caps-label">Next up</span>
         <span className="t-small muted tnum">{countdownTo(match.kickoff_at)}</span>
       </div>
-      <div className="card">
+      <div
+        className="card"
+        style={
+          pickedCode
+            ? {
+                borderLeft: `4px solid ${accent.primary}`,
+                background: accent.tint,
+              }
+            : undefined
+        }
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -112,14 +167,52 @@ function NextBlock({ match }: { match: Match }) {
               {match.venue ? `· ${match.venue}` : ""}
             </div>
           </div>
-          <div className="t-h2 tnum">{timeOfDay(match.kickoff_at)}</div>
+          <div style={{ textAlign: "right" }}>
+            <div className="t-h2 tnum">{timeOfDay(match.kickoff_at)}</div>
+            <div className="t-small muted">{dayLabel(match.kickoff_at)}</div>
+          </div>
         </div>
+
+        {myPick ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              marginTop: 12,
+              padding: "10px 12px",
+              background: pickedCode ? "var(--foam-lit)" : "var(--paper)",
+              border: pickedCode ? `1.5px solid ${accent.primary}` : "1px solid var(--stout-12)",
+              borderRadius: "var(--r-md)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span className="caps-label">Your pick</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <span className="flag">{pickFlag}</span>
+                <span className="t-sub">{pickLabel}</span>
+              </span>
+            </div>
+            {myPick.stake > 0 ? (
+              <span
+                className="badge stake tnum"
+                style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+              >
+                <WccIcon size={12} /> {myPick.stake} staked
+              </span>
+            ) : (
+              <span className="t-small muted">no stake</span>
+            )}
+          </div>
+        ) : null}
+
         <Link
           href={`/match/${match.id}`}
-          className="btn primary block"
-          style={{ marginTop: 14, textDecoration: "none" }}
+          className={`btn ${myPick ? "secondary" : "primary"} block`}
+          style={{ marginTop: 12, textDecoration: "none" }}
         >
-          Make your pick
+          {myPick ? "Edit pick" : "Make your pick"}
         </Link>
       </div>
     </>
@@ -146,6 +239,13 @@ export default async function HomePage() {
     getRankInGroup(member.groupId, member.userId),
   ]);
 
+  let nextMyPick: MyPick = null;
+  if (nextMatch) {
+    const picks = await getGroupPicksForMatch(member.groupId, nextMatch.id);
+    const mine = picks.find((p) => p.userId === member.userId);
+    if (mine?.pick) nextMyPick = { pick: mine.pick, stake: mine.stake };
+  }
+
   return (
     <>
       <div className="appbar">
@@ -157,18 +257,6 @@ export default async function HomePage() {
           </div>
         </div>
         <span className="spacer" />
-        <Link href="/group" className="icon-btn" aria-label="Group settings">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
-          </svg>
-        </Link>
       </div>
 
       <div className="screen">
@@ -176,7 +264,23 @@ export default async function HomePage() {
           <LiveBlock match={liveMatches[0]} watching={0 /* TODO: presence */} />
         ) : null}
 
-        {nextMatch ? <NextBlock match={nextMatch} /> : <EmptyDay />}
+        {nextMatch ? <NextBlock match={nextMatch} myPick={nextMyPick} /> : <EmptyDay />}
+
+        <Link
+          href="/schedule"
+          className="btn ghost block"
+          style={{
+            justifyContent: "space-between",
+            textDecoration: "none",
+            marginTop: -4,
+            border: "1.5px dashed var(--stout-12)",
+          }}
+        >
+          <span>See full schedule</span>
+          <span className="dim">›</span>
+        </Link>
+
+        <HomeInviteCard inviteCode={member.inviteCode} groupName={member.groupName} />
 
         <div className="section-label" style={{ marginTop: 8 }}>
           <span className="caps-label">Your standing</span>
@@ -194,11 +298,21 @@ export default async function HomePage() {
             </div>
             <div className="stat-cell">
               <div className="stat-num">{stats.wcc}</div>
-              <div className="stat-label">WCC</div>
+              <div className="stat-label" style={{ display: "inline-flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
+                <WccIcon size={12} /> WCC
+                <InfoChip label="What is WCC?">
+                  <strong>World Cup Cups.</strong> +1 per basic drink, +2 per country beer. Spend on stakes.
+                </InfoChip>
+              </div>
             </div>
             <div className="stat-cell">
               <div className="stat-num">{stats.wcp}</div>
-              <div className="stat-label">WCP</div>
+              <div className="stat-label" style={{ display: "inline-flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
+                <WcpIcon size={12} /> WCP
+                <InfoChip label="What is WCP?">
+                  <strong>World Cup Points.</strong> Earned from correct picks (1 + 2× stake) and from country beers (+1 each). Drives the leaderboard.
+                </InfoChip>
+              </div>
             </div>
             <div className="stat-cell">
               <div className="stat-num" style={{ color: "var(--burn)" }}>
