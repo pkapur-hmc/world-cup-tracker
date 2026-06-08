@@ -32,36 +32,34 @@ export function BracketPicker({
     );
   }
 
+  const active = options.find((o) => o.groupId === activeId) ?? options[0];
+
   return (
-    <label
+    <div
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
+        position: "relative",
         marginBottom: 10,
-        padding: "8px 12px",
         background: "var(--paper)",
         borderRadius: "var(--r-md)",
         border: "1.5px solid var(--stout-12)",
       }}
     >
-      <span className="caps-label">🏆 Bracket</span>
+      {/* The actual select fills the entire pill so clicking anywhere opens it.
+          The visible row below is a pointer-events:none decoration. */}
       <select
         value={activeId}
         onChange={onChange}
         disabled={pending}
+        aria-label="Active bracket"
         style={{
-          flex: 1,
-          font: "inherit",
-          fontFamily: "var(--ff-ui)",
-          fontWeight: 700,
-          fontSize: 15,
-          color: "var(--stout)",
-          background: "transparent",
-          border: "none",
-          padding: "4px 6px",
-          appearance: "none",
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          opacity: 0,
           cursor: "pointer",
+          border: "none",
+          appearance: "none",
         }}
       >
         {options.map((o) => (
@@ -70,7 +68,38 @@ export function BracketPicker({
           </option>
         ))}
       </select>
-      <span className="dim" aria-hidden style={{ fontFamily: "var(--ff-display)", fontSize: 18 }}>▾</span>
-    </label>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "8px 12px",
+          pointerEvents: "none",
+        }}
+      >
+        <span className="caps-label">🏆 Bracket</span>
+        <span
+          style={{
+            flex: 1,
+            fontFamily: "var(--ff-ui)",
+            fontWeight: 700,
+            fontSize: 15,
+            color: "var(--stout)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {active.groupName} · {active.memberCount} in
+        </span>
+        <span
+          className="dim"
+          aria-hidden
+          style={{ fontFamily: "var(--ff-display)", fontSize: 18 }}
+        >
+          ▾
+        </span>
+      </div>
+    </div>
   );
 }

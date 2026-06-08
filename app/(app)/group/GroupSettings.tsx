@@ -10,6 +10,7 @@ import {
   resetCodeAction,
   updateMyDisplayNameAction,
 } from "./actions";
+import { inviteUrlFor } from "@/lib/origin";
 
 type Member = {
   userId: string;
@@ -62,7 +63,7 @@ export function GroupSettings({
     });
   }
 
-  const inviteUrl = typeof window !== "undefined" ? `${window.location.origin}/join/${code}` : `/join/${code}`;
+  const inviteUrl = inviteUrlFor(code);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>

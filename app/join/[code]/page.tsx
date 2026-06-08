@@ -20,13 +20,11 @@ export default async function JoinByCode({
     redirect(`/onboarding?code=${encodeURIComponent(code)}`);
   }
 
-  const { data: group } = await supabase
-    .from("wc_groups")
-    .select("name")
-    .eq("invite_code", code)
-    .maybeSingle();
-
-  const groupName = (group as { name: string } | null)?.name;
+  // RLS gates wc_groups SELECT to existing members, so a fresh joiner can't
+  // peek by invite_code via the table. peek_invite is a security-definer RPC
+  // that returns just the group name and bypasses RLS.
+  const { data: peeked } = await supabase.rpc("peek_invite", { invite: code });
+  const groupName = (peeked as { name: string }[] | null)?.[0]?.name;
 
   return (
     <main

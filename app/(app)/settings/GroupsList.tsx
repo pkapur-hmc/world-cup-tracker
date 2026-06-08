@@ -26,8 +26,8 @@ export function GroupsList({
       if ("error" in res) {
         setErr(res.error);
       } else {
+        // Stay on Settings; just re-render so the ACTIVE pill jumps.
         router.refresh();
-        router.push("/");
       }
       setBusyId(null);
     });

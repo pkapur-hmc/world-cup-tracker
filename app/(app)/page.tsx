@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getCurrentMembership } from "@/lib/membership";
+import { getAllMemberships, getCurrentMembership } from "@/lib/membership";
+import { BracketStandings } from "./BracketStandings";
 import { getLiveMatches, getNextMatch, type Match } from "@/lib/fixtures";
 import { getMemberStats, getRankInGroup } from "@/lib/stats";
 import { getGroupPicksForMatch } from "@/lib/picks";
@@ -231,6 +232,7 @@ function EmptyDay() {
 export default async function HomePage() {
   const member = await getCurrentMembership();
   if (!member) return null; // layout already handled redirects
+  const allMemberships = await getAllMemberships();
 
   const [liveMatches, nextMatch, stats, rank] = await Promise.all([
     getLiveMatches(),
@@ -282,8 +284,18 @@ export default async function HomePage() {
 
         <HomeInviteCard inviteCode={member.inviteCode} groupName={member.groupName} />
 
+        <BracketStandings
+          brackets={allMemberships.map((g) => ({
+            groupId: g.groupId,
+            groupName: g.groupName,
+            memberCount: g.memberCount,
+          }))}
+          userId={member.userId}
+          activeId={member.groupId}
+        />
+
         <div className="section-label" style={{ marginTop: 8 }}>
-          <span className="caps-label">Your standing</span>
+          <span className="caps-label">Your standing in {member.groupName}</span>
           <span className="t-small muted">
             #{rank.rank} of {rank.total}
             {rank.aheadName ? ` - ${rank.aheadName}'s ahead` : ""}

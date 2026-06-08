@@ -49,7 +49,7 @@ export default async function SettingsPage() {
           </div>
           <GroupsList groups={groups} activeGroupId={me.groupId} />
           <Link
-            href="/onboarding?add=1"
+            href="/brackets/new"
             className="btn ghost block"
             style={{
               marginTop: 10,

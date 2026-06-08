@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { inviteUrlFor } from "@/lib/origin";
 
 export function InviteCard({
   inviteCode,
@@ -10,8 +11,7 @@ export function InviteCard({
   groupName: string;
 }) {
   const [copied, setCopied] = useState(false);
-  const inviteUrl =
-    typeof window !== "undefined" ? `${window.location.origin}/join/${inviteCode}` : "";
+  const inviteUrl = inviteUrlFor(inviteCode);
 
   async function shareOrCopy() {
     try {

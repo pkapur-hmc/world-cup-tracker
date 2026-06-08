@@ -1,21 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "create" | "join";
 
-export function OnboardingForm() {
+export function OnboardingForm({
+  initialDisplayName,
+}: {
+  initialDisplayName?: string;
+}) {
   const search = useSearchParams();
   const initialCode = search.get("code")?.trim() ?? "";
   const [mode, setMode] = useState<Mode>(initialCode ? "join" : "create");
   const [groupName, setGroupName] = useState("");
   const [inviteCode, setInviteCode] = useState(initialCode);
-  const [displayName, setDisplayName] = useState("");
+  // When the user already has a membership we hide the display-name field
+  // entirely - they keep the name they're already using.
+  const [displayName, setDisplayName] = useState(initialDisplayName ?? "");
+  const hasExistingName = !!initialDisplayName;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  // If the parent doesn't pass initialDisplayName but the user actually has
+  // memberships (e.g. on a deep-linked /onboarding?add=1), fetch one client-side.
+  useEffect(() => {
+    if (initialDisplayName) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      const { data } = await supabase
+        .from("wc_memberships")
+        .select("display_name")
+        .eq("user_id", user.id)
+        .limit(1);
+      if (cancelled) return;
+      const name = (data?.[0] as { display_name: string } | undefined)?.display_name;
+      if (name) setDisplayName(name);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialDisplayName]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -62,7 +94,7 @@ export function OnboardingForm() {
           className={`btn ${mode === "create" ? "primary" : "ghost"} sm`}
           style={{ flex: 1 }}
         >
-          Create group
+          Create bracket
         </button>
         <button
           type="button"
@@ -77,7 +109,7 @@ export function OnboardingForm() {
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {mode === "create" ? (
           <div>
-            <div className="caps-label" style={{ marginBottom: 6 }}>Group name</div>
+            <div className="caps-label" style={{ marginBottom: 6 }}>Bracket name</div>
             <input
               className="input"
               value={groupName}
@@ -99,23 +131,30 @@ export function OnboardingForm() {
           </div>
         )}
 
-        <div>
-          <div className="caps-label" style={{ marginBottom: 6 }}>Your display name</div>
-          <input
-            className="input"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="What others see"
-            required
-          />
-        </div>
+        {hasExistingName ? (
+          <div className="t-small muted" style={{ paddingLeft: 2 }}>
+            Joining as <strong style={{ color: "var(--stout)" }}>{displayName}</strong>. Change
+            it any time from Settings.
+          </div>
+        ) : (
+          <div>
+            <div className="caps-label" style={{ marginBottom: 6 }}>Your display name</div>
+            <input
+              className="input"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="What others see"
+              required
+            />
+          </div>
+        )}
 
         {error ? (
           <p className="t-small" style={{ color: "var(--penalty)" }}>{error}</p>
         ) : null}
 
-        <button type="submit" className="btn primary block" disabled={isSubmitting}>
-          {isSubmitting ? "Working..." : mode === "create" ? "Create group" : "Join group"}
+        <button type="submit" className="btn primary block" disabled={isSubmitting || !displayName.trim()}>
+          {isSubmitting ? "Working..." : mode === "create" ? "Create bracket" : "Join bracket"}
         </button>
       </form>
     </div>
