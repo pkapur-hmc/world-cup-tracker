@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WCC · Match detail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .pick-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .pick-row.knockout { grid-template-columns: 1fr 1fr; }
+  .pick-btn {
+    padding: 14px 10px;
+    border-radius: var(--r-md);
+    background: var(--bubble);
+    border: 1.5px solid var(--stout-12);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-family: var(--ff-ui);
+    font-weight: 700;
+    color: var(--stout);
+  }
+  .pick-btn:hover { background: var(--paper); }
+  .pick-btn.selected { background: var(--pour); border-color: var(--burn); }
+  .pick-btn .pick-flag { font-size: 28px; }
+  .pick-btn .pick-team { font-size: 13px; }
+  .pick-btn .pick-pct { font-size: 11px; color: var(--stout-55); margin-top: 2px; }
+  .pick-btn.selected .pick-pct { color: var(--stout); }
+
+  .group-pick-row {
+    display: grid;
+    grid-template-columns: 36px 1fr auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--stout-12);
+  }
+  .group-pick-row:last-child { border-bottom: none; }
+  .group-pick-row .gp-name { font-family: var(--ff-ui); font-weight: 700; font-size: 14px; }
+  .group-pick-row .gp-pick {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--ff-ui); font-weight: 700; font-size: 12px;
+    padding: 4px 8px; border-radius: var(--r-pill);
+    background: var(--paper); color: var(--stout);
+  }
+  .group-pick-row .gp-stake {
+    font-family: var(--ff-display); font-weight: 800; font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    color: var(--burn);
+  }
+  .group-pick-row.correct .gp-pick { background: rgba(58, 107, 46, 0.18); color: var(--pitch); }
+  .group-pick-row.wrong .gp-pick { background: rgba(139, 32, 24, 0.12); color: var(--penalty); }
+  .group-pick-row.hidden .gp-pick { background: var(--stout-12); color: var(--stout-55); }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <div class="phone-row">
+
+    <!-- ========== MATCH DETAIL · PRE ========== -->
+    <div class="phone" data-screen-label="Match detail / pre">
+      <div class="status-bar">
+        <span>9:47</span>
+        <span class="sb-right tnum">●●●</span>
+      </div>
+      <div class="appbar" style="padding-bottom: 6px;">
+        <button class="icon-btn" aria-label="Back">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#1C140C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div style="flex: 1;">
+          <div class="caps-label">Group D · M2</div>
+        </div>
+      </div>
+
+      <div class="screen" style="gap: 18px;">
+
+        <!-- Hero -->
+        <div style="text-align: center; padding: 8px 0 4px;">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 18px;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <span class="flag xl">🇧🇷</span>
+              <span class="t-sub">BRA</span>
+            </div>
+            <div class="t-display dim" style="font-size: 36px;">vs</div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <span class="flag xl">🇲🇦</span>
+              <span class="t-sub">MAR</span>
+            </div>
+          </div>
+          <div class="t-h1 tnum" style="margin-top: 18px;">2h 12m</div>
+          <div class="t-small muted" style="margin-top: 4px;">MetLife Stadium · 12:00 ET</div>
+        </div>
+
+        <!-- YOUR PICK -->
+        <div>
+          <div class="section-label">
+            <span class="caps-label">Your pick</span>
+            <span class="t-small muted">Pick locks in 12 min</span>
+          </div>
+          <div class="pick-row">
+            <button class="pick-btn selected">
+              <span class="pick-flag">🇧🇷</span>
+              <span class="pick-team">BRA</span>
+              <span class="pick-pct tnum">68%</span>
+            </button>
+            <button class="pick-btn">
+              <span class="pick-flag" style="font-size: 22px; line-height: 1.3;">DRAW</span>
+              <span class="pick-team" style="visibility: hidden;">·</span>
+              <span class="pick-pct tnum">19%</span>
+            </button>
+            <button class="pick-btn">
+              <span class="pick-flag">🇲🇦</span>
+              <span class="pick-team">MAR</span>
+              <span class="pick-pct tnum">13%</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- STAKE -->
+        <div>
+          <div class="section-label">
+            <span class="caps-label">Stake</span>
+            <span class="t-small muted tnum">You have 47 WCC available</span>
+          </div>
+          <div class="card well" style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div class="t-small muted">Staking</div>
+              <div style="display: flex; align-items: baseline; gap: 6px;">
+                <span class="t-h1 tnum">5</span>
+                <span class="t-small muted">WCC →</span>
+                <span class="t-h2 tnum" style="color: var(--pitch);">+7</span>
+                <span class="t-small muted">WCP</span>
+              </div>
+            </div>
+            <div class="stepper">
+              <button>−</button>
+              <span class="value tnum">5</span>
+              <button>+</button>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn primary block">Lock pick</button>
+
+        <!-- GROUP PICKS -->
+        <div>
+          <div class="section-label">
+            <span class="caps-label">Group picks</span>
+            <span class="t-small muted">3 of 6 in</span>
+          </div>
+          <div class="card">
+            <div class="group-pick-row">
+              <div class="avatar sm av-1">S</div>
+              <div class="gp-name">Sam</div>
+              <span class="gp-pick"><span class="flag">🇧🇷</span> BRA</span>
+              <span class="gp-stake tnum">8</span>
+            </div>
+            <div class="group-pick-row">
+              <div class="avatar sm av-3">J</div>
+              <div class="gp-name">Jules</div>
+              <span class="gp-pick"><span class="flag">🇲🇦</span> MAR</span>
+              <span class="gp-stake tnum">3</span>
+            </div>
+            <div class="group-pick-row hidden">
+              <div class="avatar sm av-4">P</div>
+              <div class="gp-name">Pat</div>
+              <span class="gp-pick">Pending</span>
+              <span class="gp-stake dim">—</span>
+            </div>
+            <div class="group-pick-row hidden">
+              <div class="avatar sm av-5">R</div>
+              <div class="gp-name">Robin</div>
+              <span class="gp-pick">Pending</span>
+              <span class="gp-stake dim">—</span>
+            </div>
+            <div class="group-pick-row hidden">
+              <div class="avatar sm av-2">L</div>
+              <div class="gp-name">Lee</div>
+              <span class="gp-pick">Pending</span>
+              <span class="gp-stake dim">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="height: 8px;"></div>
+      </div>
+
+      <nav class="tabbar">
+        <a class="tab" href="01-home.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 11L12 3l9 8v9a1 1 0 01-1 1h-5v-7h-6v7H4a1 1 0 01-1-1v-9z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Home</a>
+        <a class="tab is-active" href="03-schedule.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Schedule<span class="tab-dot"></span></a>
+        <a class="tab" href="05-leaderboard.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M8 21h8M12 17v4M6 4h12v4a6 6 0 01-12 0V4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M18 5h3v3a3 3 0 01-3 3M6 5H3v3a3 3 0 003 3" stroke="currentColor" stroke-width="1.8"/></svg>Leaderboard</a>
+        <a class="tab" href="06-passport.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="1.5" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="11" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M9 18h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Passport</a>
+      </nav>
+    </div>
+
+    <!-- ========== MATCH DETAIL · POST ========== -->
+    <div class="phone" data-screen-label="Match detail / post">
+      <div class="status-bar">
+        <span>9:47</span>
+        <span class="sb-right tnum">●●●</span>
+      </div>
+      <div class="appbar" style="padding-bottom: 6px;">
+        <button class="icon-btn" aria-label="Back">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#1C140C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div style="flex: 1;">
+          <div class="caps-label">Group A · M3 · Final</div>
+        </div>
+      </div>
+
+      <div class="screen" style="gap: 18px;">
+        <!-- Hero w/ score -->
+        <div style="text-align: center; padding: 8px 0 4px;">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 22px;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <span class="flag xl">🇺🇸</span>
+              <span class="t-sub">USA</span>
+            </div>
+            <div class="t-display tnum" style="font-size: 64px;">2</div>
+            <div class="t-display dim" style="font-size: 56px;">–</div>
+            <div class="t-display tnum" style="font-size: 64px;">1</div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <span class="flag xl">🇨🇦</span>
+              <span class="t-sub">CAN</span>
+            </div>
+          </div>
+          <div class="caps-label" style="margin-top: 16px; display: inline-flex; gap: 8px; align-items: center;">
+            <span style="background: var(--pitch); color: var(--foam-lit); padding: 4px 10px; border-radius: var(--r-pill);">Winner</span>
+            <span class="t-sub">🇺🇸 USA</span>
+          </div>
+        </div>
+
+        <!-- YOUR PICK summary + payout -->
+        <div class="card elevated" style="border-color: var(--pitch);">
+          <div class="section-label" style="margin-bottom: 8px;">
+            <span class="caps-label" style="color: var(--pitch);">Your pick · Correct</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="var(--pitch)"/><path d="M7 12l3.5 3.5L17 9" stroke="#FFFEF2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; padding: 8px 0;">
+            <div>
+              <div class="caps-label">Picked</div>
+              <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+                <span class="flag lg">🇺🇸</span>
+                <span class="t-sub">USA</span>
+              </div>
+            </div>
+            <div style="font-size: 22px; color: var(--stout-35);">→</div>
+            <div style="text-align: right;">
+              <div class="caps-label">Payout</div>
+              <div class="t-h1 tnum" style="color: var(--pitch); margin-top: 4px;">+11</div>
+              <div class="t-small muted">WCP</div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 1px dashed var(--stout-12); font-size: 12px; color: var(--stout-70);">
+            <span>Stake: <span class="tnum" style="font-weight: 700; color: var(--stout);">4 WCC</span></span>
+            <span>Odds: <span class="tnum" style="font-weight: 700;">2.75×</span></span>
+            <span>Base: <span class="tnum">3</span></span>
+          </div>
+        </div>
+
+        <!-- GROUP RESULTS -->
+        <div>
+          <div class="section-label">
+            <span class="caps-label">Group results</span>
+            <span class="t-small muted">3 of 6 got it</span>
+          </div>
+          <div class="card">
+            <div class="group-pick-row correct">
+              <div class="avatar sm av-1">S</div>
+              <div class="gp-name">Sam</div>
+              <span class="gp-pick"><span class="flag">🇺🇸</span> USA</span>
+              <span class="gp-stake tnum" style="color: var(--pitch);">+22</span>
+            </div>
+            <div class="group-pick-row correct">
+              <div class="avatar sm av-6">Y</div>
+              <div class="gp-name">You</div>
+              <span class="gp-pick"><span class="flag">🇺🇸</span> USA</span>
+              <span class="gp-stake tnum" style="color: var(--pitch);">+11</span>
+            </div>
+            <div class="group-pick-row correct">
+              <div class="avatar sm av-2">L</div>
+              <div class="gp-name">Lee</div>
+              <span class="gp-pick"><span class="flag">🇺🇸</span> USA</span>
+              <span class="gp-stake tnum" style="color: var(--pitch);">+8</span>
+            </div>
+            <div class="group-pick-row wrong">
+              <div class="avatar sm av-3">J</div>
+              <div class="gp-name">Jules</div>
+              <span class="gp-pick"><span class="flag">🇨🇦</span> CAN</span>
+              <span class="gp-stake tnum" style="color: var(--penalty);">−6</span>
+            </div>
+            <div class="group-pick-row wrong">
+              <div class="avatar sm av-4">P</div>
+              <div class="gp-name">Pat</div>
+              <span class="gp-pick">Draw</span>
+              <span class="gp-stake tnum" style="color: var(--penalty);">−3</span>
+            </div>
+            <div class="group-pick-row wrong">
+              <div class="avatar sm av-5">R</div>
+              <div class="gp-name">Robin</div>
+              <span class="gp-pick"><span class="flag">🇨🇦</span> CAN</span>
+              <span class="gp-stake tnum" style="color: var(--penalty);">−3</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MATCH DRINKS -->
+        <div>
+          <div class="section-label">
+            <span class="caps-label">Match drinks</span>
+            <span class="t-small muted">42 total · 90'</span>
+          </div>
+          <div class="card">
+            <div class="drink-row you">
+              <span class="flag">🇺🇸</span>
+              <span class="who">You</span>
+              <span class="bar-wrap"><span class="bar" style="width: 95%;"></span></span>
+              <span class="count">11</span>
+            </div>
+            <div class="drink-row">
+              <span class="flag">🇺🇸</span>
+              <span class="who">Sam</span>
+              <span class="bar-wrap"><span class="bar" style="width: 78%;"></span></span>
+              <span class="count">9</span>
+            </div>
+            <div class="drink-row">
+              <span class="flag">🇨🇦</span>
+              <span class="who">Jules</span>
+              <span class="bar-wrap"><span class="bar" style="width: 66%;"></span></span>
+              <span class="count">7</span>
+            </div>
+            <div class="drink-row">
+              <span class="flag">🇨🇦</span>
+              <span class="who">Pat</span>
+              <span class="bar-wrap"><span class="bar" style="width: 52%;"></span></span>
+              <span class="count">6</span>
+            </div>
+            <div class="drink-row">
+              <span class="flag">🇨🇦</span>
+              <span class="who">Robin</span>
+              <span class="bar-wrap"><span class="bar" style="width: 42%;"></span></span>
+              <span class="count">5</span>
+            </div>
+            <div class="drink-row">
+              <span class="flag">🇺🇸</span>
+              <span class="who">Lee</span>
+              <span class="bar-wrap"><span class="bar" style="width: 34%;"></span></span>
+              <span class="count">4</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="height: 8px;"></div>
+      </div>
+
+      <nav class="tabbar">
+        <a class="tab" href="01-home.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 11L12 3l9 8v9a1 1 0 01-1 1h-5v-7h-6v7H4a1 1 0 01-1-1v-9z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Home</a>
+        <a class="tab is-active" href="03-schedule.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Schedule<span class="tab-dot"></span></a>
+        <a class="tab" href="05-leaderboard.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M8 21h8M12 17v4M6 4h12v4a6 6 0 01-12 0V4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M18 5h3v3a3 3 0 01-3 3M6 5H3v3a3 3 0 003 3" stroke="currentColor" stroke-width="1.8"/></svg>Leaderboard</a>
+        <a class="tab" href="06-passport.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="1.5" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="11" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M9 18h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Passport</a>
+      </nav>
+    </div>
+
+  </div>
+
+  <!-- STATES -->
+  <div class="state-rail">
+    <div class="stage-label">Empty · Loading · Error</div>
+    <div class="phone-row triple">
+
+      <!-- EMPTY: knockout, no pick made yet -->
+      <div class="phone" data-screen-label="Match detail / empty" style="min-height: 760px;">
+        <div class="status-bar"><span>9:47</span><span class="sb-right tnum">●●●</span></div>
+        <div class="appbar" style="padding-bottom: 6px;">
+          <button class="icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#1C140C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div style="flex: 1;"><div class="caps-label">Round of 16 · M37</div></div>
+        </div>
+        <div class="screen" style="gap: 18px;">
+          <div style="text-align: center; padding: 8px 0;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 18px;">
+              <div style="display: flex; flex-direction: column; align-items: center;"><span class="flag xl">🇪🇸</span><span class="t-sub">ESP</span></div>
+              <div class="t-display dim" style="font-size: 36px;">vs</div>
+              <div style="display: flex; flex-direction: column; align-items: center;"><span class="flag xl">🇯🇵</span><span class="t-sub">JPN</span></div>
+            </div>
+            <div class="t-h1 tnum" style="margin-top: 18px;">3 days</div>
+            <div class="t-small muted">Picks open in 2 days</div>
+          </div>
+          <div class="empty-block">
+            <div class="empty-lead">Not your turn yet.</div>
+            <div class="empty-sub">Knockout picks open after group stage wraps.</div>
+          </div>
+          <div class="section-label" style="margin-top: 8px;"><span class="caps-label">Knockout picks</span></div>
+          <div class="pick-row knockout">
+            <button class="pick-btn" disabled style="opacity: 0.45;">
+              <span class="pick-flag">🇪🇸</span><span class="pick-team">ESP</span><span class="pick-pct">—</span>
+            </button>
+            <button class="pick-btn" disabled style="opacity: 0.45;">
+              <span class="pick-flag">🇯🇵</span><span class="pick-team">JPN</span><span class="pick-pct">—</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOADING -->
+      <div class="phone" data-screen-label="Match detail / loading" style="min-height: 760px;">
+        <div class="status-bar"><span>9:47</span><span class="sb-right tnum">●●●</span></div>
+        <div class="appbar" style="padding-bottom: 6px;">
+          <button class="icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#1C140C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div style="flex: 1;"><div class="skel" style="width: 120px; height: 11px;"></div></div>
+        </div>
+        <div class="screen" style="gap: 18px;">
+          <div style="display: flex; justify-content: center; gap: 22px; padding: 16px 0;">
+            <div class="skel" style="width: 56px; height: 56px; border-radius: 50%;"></div>
+            <div class="skel" style="width: 56px; height: 56px; border-radius: 50%;"></div>
+          </div>
+          <div class="skel lg" style="width: 60%; margin: 0 auto;"></div>
+          <div class="skel" style="width: 80px; height: 12px;"></div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <div class="skel" style="height: 84px; border-radius: var(--r-md);"></div>
+            <div class="skel" style="height: 84px; border-radius: var(--r-md);"></div>
+            <div class="skel" style="height: 84px; border-radius: var(--r-md);"></div>
+          </div>
+          <div class="skel block"></div>
+          <div class="skel" style="height: 48px; border-radius: 999px;"></div>
+        </div>
+      </div>
+
+      <!-- ERROR (pick failed to lock) -->
+      <div class="phone" data-screen-label="Match detail / error" style="min-height: 760px;">
+        <div class="status-bar"><span>9:47</span><span class="sb-right tnum">●●●</span></div>
+        <div class="appbar" style="padding-bottom: 6px;">
+          <button class="icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#1C140C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div style="flex: 1;"><div class="caps-label">Group D · M2</div></div>
+        </div>
+        <div class="screen" style="gap: 16px;">
+          <div style="text-align: center; padding: 8px 0;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 18px;">
+              <div style="display: flex; flex-direction: column; align-items: center;"><span class="flag xl">🇧🇷</span><span class="t-sub">BRA</span></div>
+              <div class="t-display dim" style="font-size: 36px;">vs</div>
+              <div style="display: flex; flex-direction: column; align-items: center;"><span class="flag xl">🇲🇦</span><span class="t-sub">MAR</span></div>
+            </div>
+          </div>
+          <div class="error-block">
+            <div class="error-lead">Pick didn't lock.</div>
+            <div class="t-small muted">Connection dropped. You staked 5 WCC on BRA — try again before 11:55.</div>
+            <button class="btn primary sm">Lock pick</button>
+            <button class="link">change pick</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

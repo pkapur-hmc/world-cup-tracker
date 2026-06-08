@@ -30,10 +30,10 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect routes: redirect unauthenticated users away from app routes
+  // Protect routes: redirect unauthenticated users to /welcome
   const path = request.nextUrl.pathname;
   const isPublic =
-    path === "/" ||
+    path === "/welcome" ||
     path.startsWith("/auth") ||
     path.startsWith("/join/") ||
     path.startsWith("/_next") ||
@@ -41,7 +41,7 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/welcome";
     return NextResponse.redirect(url);
   }
 

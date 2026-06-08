@@ -1,18 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 type Mode = "create" | "join";
 
 export function OnboardingForm() {
-  const [mode, setMode] = useState<Mode>("create");
+  const search = useSearchParams();
+  const initialCode = search.get("code")?.trim() ?? "";
+  const [mode, setMode] = useState<Mode>(initialCode ? "join" : "create");
   const [groupName, setGroupName] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCode, setInviteCode] = useState(initialCode);
   const [displayName, setDisplayName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +37,7 @@ export function OnboardingForm() {
         });
         if (rpcError) throw rpcError;
       }
-      router.push("/drinker");
+      router.push("/");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -47,34 +46,40 @@ export function OnboardingForm() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex rounded-md border border-zinc-200 p-1 text-sm">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div
+        style={{
+          display: "flex",
+          border: "1px solid var(--stout-12)",
+          borderRadius: "var(--r-md)",
+          padding: 4,
+          gap: 4,
+        }}
+      >
         <button
           type="button"
           onClick={() => setMode("create")}
-          className={`flex-1 rounded px-3 py-1.5 transition ${
-            mode === "create" ? "bg-zinc-900 text-white" : "text-zinc-600"
-          }`}
+          className={`btn ${mode === "create" ? "primary" : "ghost"} sm`}
+          style={{ flex: 1 }}
         >
           Create group
         </button>
         <button
           type="button"
           onClick={() => setMode("join")}
-          className={`flex-1 rounded px-3 py-1.5 transition ${
-            mode === "join" ? "bg-zinc-900 text-white" : "text-zinc-600"
-          }`}
+          className={`btn ${mode === "join" ? "primary" : "ghost"} sm`}
+          style={{ flex: 1 }}
         >
           Join with code
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {mode === "create" ? (
-          <div className="space-y-2">
-            <Label htmlFor="groupName">Group name</Label>
-            <Input
-              id="groupName"
+          <div>
+            <div className="caps-label" style={{ marginBottom: 6 }}>Group name</div>
+            <input
+              className="input"
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
               placeholder="e.g. The Couch Crew"
@@ -82,10 +87,10 @@ export function OnboardingForm() {
             />
           </div>
         ) : (
-          <div className="space-y-2">
-            <Label htmlFor="inviteCode">Invite code</Label>
-            <Input
-              id="inviteCode"
+          <div>
+            <div className="caps-label" style={{ marginBottom: 6 }}>Invite code</div>
+            <input
+              className="input"
               value={inviteCode}
               onChange={(e) => setInviteCode(e.target.value)}
               placeholder="8-character code"
@@ -94,10 +99,10 @@ export function OnboardingForm() {
           </div>
         )}
 
-        <div className="space-y-2">
-          <Label htmlFor="displayName">Your display name</Label>
-          <Input
-            id="displayName"
+        <div>
+          <div className="caps-label" style={{ marginBottom: 6 }}>Your display name</div>
+          <input
+            className="input"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="What others see"
@@ -105,15 +110,13 @@ export function OnboardingForm() {
           />
         </div>
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {error ? (
+          <p className="t-small" style={{ color: "var(--penalty)" }}>{error}</p>
+        ) : null}
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting
-            ? "Working..."
-            : mode === "create"
-              ? "Create group"
-              : "Join group"}
-        </Button>
+        <button type="submit" className="btn primary block" disabled={isSubmitting}>
+          {isSubmitting ? "Working..." : mode === "create" ? "Create group" : "Join group"}
+        </button>
       </form>
     </div>
   );

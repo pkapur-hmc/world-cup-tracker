@@ -1,20 +1,24 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, Bricolage_Grotesque } from "next/font/google";
 import "./globals.css";
+import "./styles.css";
+import "./overrides.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fraunces = Fraunces({
   subsets: ["latin"],
+  weight: ["400", "600", "800"],
+  variable: "--ff-display",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
+  weight: ["500", "700"],
+  variable: "--ff-ui",
 });
 
 export const metadata: Metadata = {
-  title: "World Cup Tracker",
-  description: "Match-aware drink tracking for the 2026 World Cup",
+  title: "The World Cup Cup",
+  description: "Pour, pick, stamp - track your group through the 2026 World Cup.",
 };
 
 export default function RootLayout({
@@ -23,11 +27,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en" className={`${fraunces.variable} ${bricolage.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }

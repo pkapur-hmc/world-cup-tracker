@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WCC · Styleguide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .sg-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 64px 40px 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 56px;
+  }
+  .sg-header {
+    display: flex; gap: 24px; align-items: flex-end; justify-content: space-between;
+    border-bottom: 1px solid var(--stout-12);
+    padding-bottom: 20px;
+  }
+  .sg-header h1 { font-family: var(--ff-display); font-weight: 800; font-size: 48px; letter-spacing: -0.02em; }
+  .sg-header .sg-meta { font-size: 13px; color: var(--stout-70); }
+  .sg-section h2 {
+    font-family: var(--ff-display); font-weight: 600; font-size: 28px;
+    letter-spacing: -0.01em; margin-bottom: 4px;
+  }
+  .sg-section .sg-desc { font-size: 14px; color: var(--stout-70); margin-bottom: 24px; max-width: 600px; }
+  .sg-block {
+    background: var(--bubble);
+    border: 1px solid var(--stout-12);
+    border-radius: var(--r-md);
+    padding: 28px;
+  }
+  .sg-row {
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+  }
+  .sg-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+  }
+  .sg-caption {
+    font-family: var(--ff-ui); font-weight: 700; font-size: 11px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--stout-55);
+    margin-top: 10px;
+  }
+
+  /* color swatches */
+  .swatch {
+    background: var(--bubble);
+    border: 1px solid var(--stout-12);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .swatch .chip {
+    height: 92px; border-radius: 0;
+    border: none; cursor: default;
+    width: 100%;
+  }
+  .swatch .meta {
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .swatch .meta .name { font-family: var(--ff-ui); font-weight: 700; font-size: 14px; }
+  .swatch .meta .hex { font-family: var(--ff-ui); font-weight: 500; font-size: 12px; color: var(--stout-55); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+  .swatch .meta .role { font-size: 11px; color: var(--stout-55); }
+
+  .type-row {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 24px;
+    align-items: baseline;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--stout-12);
+  }
+  .type-row:last-child { border-bottom: none; }
+  .type-row .scale-tag {
+    font-family: var(--ff-ui); font-weight: 700; font-size: 11px;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--stout-55);
+  }
+  .type-spec { font-family: var(--ff-ui); font-weight: 500; font-size: 12px; color: var(--stout-55); margin-top: 4px; }
+
+  .num-line {
+    display: flex; align-items: baseline; gap: 18px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--stout-12);
+  }
+  .num-line:last-child { border-bottom: none; }
+  .num-line .nval { font-family: var(--ff-display); font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+  .num-line .ntag { font-family: var(--ff-ui); font-weight: 700; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--stout-55); }
+
+  .state-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .state-grid .state-cell {
+    display: flex; flex-direction: column; gap: 10px; align-items: center;
+  }
+  .state-grid .state-cell .sc-cap {
+    font-family: var(--ff-ui); font-weight: 700; font-size: 10px;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--stout-55);
+  }
+
+  .motion-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .motion-card {
+    background: var(--foam);
+    border: 1px solid var(--stout-12);
+    border-radius: var(--r-md);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .motion-card .mc-title {
+    font-family: var(--ff-display); font-weight: 600; font-size: 18px;
+  }
+  .motion-card .mc-spec { font-family: var(--ff-ui); font-weight: 500; font-size: 12px; color: var(--stout-70); font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+
+<div class="sg-page">
+
+  <!-- HEADER -->
+  <div class="sg-header">
+    <div>
+      <div class="caps-label" style="color: var(--burn);">The World Cup Cup · Styleguide</div>
+      <h1 style="margin-top: 4px;">Brand & components</h1>
+      <div class="sg-meta" style="margin-top: 8px;">Brand is locked. Apply, don't redesign.</div>
+    </div>
+    <img src="mark.svg" alt="" style="width: 72px; height: 84px;" />
+  </div>
+
+  <!-- COLOR -->
+  <section class="sg-section">
+    <h2>Color</h2>
+    <p class="sg-desc">Foam is the page. Stout is the type. Pour is the one thing on screen asking for attention. Don't paint the screen orange.</p>
+    <div class="sg-grid">
+      <div class="swatch"><div class="chip" style="background: #E59C20;"></div><div class="meta"><span class="name">Pour</span><span class="hex">#E59C20</span><span class="role">Primary · CTAs · "your"</span></div></div>
+      <div class="swatch"><div class="chip" style="background: #F2EAD3;"></div><div class="meta"><span class="name">Foam</span><span class="hex">#F2EAD3</span><span class="role">Page background</span></div></div>
+      <div class="swatch"><div class="chip" style="background: #1C140C;"></div><div class="meta"><span class="name">Stout</span><span class="hex">#1C140C</span><span class="role">Text · strokes</span></div></div>
+      <div class="swatch"><div class="chip" style="background: #D88817;"></div><div class="meta"><span class="name">Honey</span><span class="hex">#D88817</span><span class="role">Hover · secondary</span></div></div>
+      <div class="swatch"><div class="chip" style="background: #B86C0C;"></div><div class="meta"><span class="name">Burn</span><span class="hex">#B86C0C</span><span class="role">Deep amber accent</span></div></div>
+      <div class="swatch"><div class="chip" style="background: #FBF4E0;"></div><div class="meta"><span class="name">Bubble</span><span class="hex">#FBF4E0</span><span class="role">Elevated cards</span></div></div>
+      <div class="swatch"><div class="chip" style="background: #EDDFB8;"></div><div class="meta"><span class="name">Paper</span><span class="hex">#EDDFB8</span><span class="role">Wells · hover bg</span></div></div>
+      <div class="swatch"><div class="chip" style="background: #FFFEF2;"></div><div class="meta"><span class="name">Foam-lit</span><span class="hex">#FFFEF2</span><span class="role">Highlights</span></div></div>
+      <div class="swatch"><div class="chip" style="background: #3A6B2E;"></div><div class="meta"><span class="name">Pitch</span><span class="hex">#3A6B2E</span><span class="role">Correct pick · success</span></div></div>
+      <div class="swatch"><div class="chip" style="background: #8B2018;"></div><div class="meta"><span class="name">Penalty</span><span class="hex">#8B2018</span><span class="role">Wrong pick · errors</span></div></div>
+      <div class="swatch"><div class="chip" style="background: #C8341B;"></div><div class="meta"><span class="name">Live</span><span class="hex">#C8341B</span><span class="role">Live-match red dot</span></div></div>
+    </div>
+  </section>
+
+  <!-- TYPE -->
+  <section class="sg-section">
+    <h2>Type</h2>
+    <p class="sg-desc">Fraunces (400/600/800) for display + wordmark; Bricolage Grotesque (500/700) for UI. Tabular numerals on every stat. Caps labels are Bricolage 700 + 0.08em tracking.</p>
+    <div class="sg-block">
+      <div class="type-row">
+        <div class="scale-tag">Display<br/><span class="type-spec">Fraunces 800 · 56px</span></div>
+        <div><div class="t-display">+11 WCP</div></div>
+      </div>
+      <div class="type-row">
+        <div class="scale-tag">H1<br/><span class="type-spec">Fraunces 800 · 32px</span></div>
+        <div><div class="t-h1">Make your pick</div></div>
+      </div>
+      <div class="type-row">
+        <div class="scale-tag">H2<br/><span class="type-spec">Fraunces 600 · 24px</span></div>
+        <div><div class="t-h2">Group results</div></div>
+      </div>
+      <div class="type-row">
+        <div class="scale-tag">Subhead<br/><span class="type-spec">Bricolage 700 · 18px</span></div>
+        <div><div class="t-sub">The Round Table</div></div>
+      </div>
+      <div class="type-row">
+        <div class="scale-tag">Body<br/><span class="type-spec">Bricolage 500 · 16px</span></div>
+        <div><div class="t-body">Sam's pulling ahead — 6 to 4.</div></div>
+      </div>
+      <div class="type-row">
+        <div class="scale-tag">Small<br/><span class="type-spec">Bricolage 500 · 14px</span></div>
+        <div><div class="t-small">Group D · MetLife Stadium, NJ</div></div>
+      </div>
+      <div class="type-row">
+        <div class="scale-tag">Caps<br/><span class="type-spec">Bricolage 700 · 12px · +0.08em</span></div>
+        <div><div class="caps-label">Live now</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NUMBERS -->
+  <section class="sg-section">
+    <h2>Numbers</h2>
+    <p class="sg-desc">Tabular numerals on every stat — leaderboard totals, drink counts, kickoff clocks, WCC staked.</p>
+    <div class="sg-block">
+      <div class="num-line">
+        <span class="nval" style="font-size: 72px;">+11</span>
+        <span class="ntag">Display · 72</span>
+        <span class="t-small muted" style="margin-left: auto;">Final score · WCP payout</span>
+      </div>
+      <div class="num-line">
+        <span class="nval" style="font-size: 32px;">23</span>
+        <span class="ntag">Stat · 32</span>
+        <span class="t-small muted" style="margin-left: auto;">Standing tile</span>
+      </div>
+      <div class="num-line">
+        <span class="nval" style="font-size: 28px;">59</span>
+        <span class="ntag">Total · 28</span>
+        <span class="t-small muted" style="margin-left: auto;">Leaderboard row total</span>
+      </div>
+      <div class="num-line">
+        <span class="nval" style="font-family: var(--ff-ui); font-weight: 700; font-size: 16px;">47 · 47 · 22 · 🛂 8</span>
+        <span class="ntag">Mini · 12</span>
+        <span class="t-small muted" style="margin-left: auto;">Leaderboard subline (D · WCC · WCP · stamps)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- BUTTONS -->
+  <section class="sg-section">
+    <h2>Buttons</h2>
+    <p class="sg-desc">Primary (Pour fill), secondary (outlined Stout), ghost — across four states. Pill, ≥ 48px tall. No icons inside.</p>
+    <div class="sg-block" style="display: grid; grid-template-columns: 80px repeat(4, 1fr); gap: 16px; align-items: center;">
+      <span></span>
+      <span class="sg-caption">Default</span>
+      <span class="sg-caption">Hover</span>
+      <span class="sg-caption">Pressed</span>
+      <span class="sg-caption">Disabled</span>
+
+      <span class="caps-label">Primary</span>
+      <button class="btn primary">Lock pick</button>
+      <button class="btn primary" style="background: var(--honey); border-color: var(--honey);">Lock pick</button>
+      <button class="btn primary" style="background: var(--burn); border-color: var(--burn);">Lock pick</button>
+      <button class="btn primary is-disabled" disabled>Lock pick</button>
+
+      <span class="caps-label">Secondary</span>
+      <button class="btn secondary">See schedule</button>
+      <button class="btn secondary" style="background: var(--paper);">See schedule</button>
+      <button class="btn secondary" style="background: var(--stout-12);">See schedule</button>
+      <button class="btn secondary" disabled>See schedule</button>
+
+      <span class="caps-label">Ghost</span>
+      <button class="btn ghost">undo last</button>
+      <button class="btn ghost" style="background: var(--paper);">undo last</button>
+      <button class="btn ghost" style="background: var(--stout-12);">undo last</button>
+      <button class="btn ghost" style="color: var(--stout-35);">undo last</button>
+    </div>
+  </section>
+
+  <!-- CARDS -->
+  <section class="sg-section">
+    <h2>Cards</h2>
+    <div class="sg-block" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+      <div>
+        <div class="card">
+          <div class="caps-label">Surface · Foam</div>
+          <div class="t-sub" style="margin-top: 6px;">For inline content blocks.</div>
+        </div>
+        <div class="sg-caption">.card</div>
+      </div>
+      <div>
+        <div class="card elevated">
+          <div class="caps-label">Elevated · Bubble</div>
+          <div class="t-sub" style="margin-top: 6px;">For headlining standings.</div>
+        </div>
+        <div class="sg-caption">.card.elevated</div>
+      </div>
+      <div>
+        <div class="card well">
+          <div class="caps-label">Well · Paper</div>
+          <div class="t-sub" style="margin-top: 6px;">For stake / input wells.</div>
+        </div>
+        <div class="sg-caption">.card.well</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INPUTS -->
+  <section class="sg-section">
+    <h2>Inputs</h2>
+    <div class="sg-block" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+      <div>
+        <div class="sg-caption" style="margin-bottom: 8px;">Text input</div>
+        <input class="input" placeholder="Group name" />
+      </div>
+      <div>
+        <div class="sg-caption" style="margin-bottom: 8px;">Filter chip</div>
+        <div class="sg-row">
+          <button class="chip">Default</button>
+          <button class="chip is-active">Active</button>
+        </div>
+      </div>
+      <div>
+        <div class="sg-caption" style="margin-bottom: 8px;">Stake stepper</div>
+        <div class="stepper">
+          <button>−</button>
+          <span class="value tnum">5</span>
+          <button>+</button>
+        </div>
+      </div>
+      <div>
+        <div class="sg-caption" style="margin-bottom: 8px;">Link button</div>
+        <div><button class="link">undo last (4m left)</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BADGES -->
+  <section class="sg-section">
+    <h2>Badges</h2>
+    <div class="sg-block sg-row">
+      <span class="badge live"><span class="dot"></span>Live</span>
+      <span class="badge time">⏰ 12:00</span>
+      <span class="badge final">Final</span>
+      <span class="badge stake tnum">3 WCC staked</span>
+      <span class="badge pick"><span class="flag">🇲🇽</span> MEX</span>
+    </div>
+  </section>
+
+  <!-- AVATARS -->
+  <section class="sg-section">
+    <h2>Avatars</h2>
+    <p class="sg-desc">Initial in circle, color seeded from username. Eight ramp colors keep the group readable across screens.</p>
+    <div class="sg-block sg-row">
+      <div class="avatar lg av-1">S</div>
+      <div class="avatar lg av-2">L</div>
+      <div class="avatar lg av-3">J</div>
+      <div class="avatar lg av-4">P</div>
+      <div class="avatar lg av-5">R</div>
+      <div class="avatar lg av-6">Y</div>
+      <div class="avatar lg av-7">C</div>
+      <div class="avatar lg av-8">M</div>
+    </div>
+  </section>
+
+  <!-- LIST ROWS -->
+  <section class="sg-section">
+    <h2>List rows</h2>
+
+    <div class="sg-block" style="display: flex; flex-direction: column; gap: 28px;">
+
+      <div>
+        <div class="sg-caption" style="margin-bottom: 10px;">Leaderboard row</div>
+        <div style="max-width: 360px;">
+          <div class="lb-row top you">
+            <span class="rank">T-2</span>
+            <div class="avatar av-6">Y</div>
+            <div class="who">
+              <div class="name">You</div>
+              <div class="flavor">the legend</div>
+              <div class="mini-stats">41 · 41 · 18 · 🛂 3</div>
+            </div>
+            <div class="total-num" style="color: var(--burn);">59</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sg-caption" style="margin-bottom: 10px;">Member row · live drink bar</div>
+        <div style="max-width: 360px;">
+          <div class="drink-row you">
+            <span class="flag">🇲🇽</span>
+            <span class="who">You</span>
+            <span class="bar-wrap"><span class="bar" style="width: 78%;"></span></span>
+            <span class="count">7</span>
+          </div>
+          <div class="drink-row">
+            <span class="flag">🇦🇷</span>
+            <span class="who">Sam</span>
+            <span class="bar-wrap"><span class="bar" style="width: 55%;"></span></span>
+            <span class="count">5</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sg-caption" style="margin-bottom: 10px;">Match card</div>
+        <div style="max-width: 360px;">
+          <a class="match-card">
+            <div>
+              <div class="mc-top">
+                <span class="badge live"><span class="dot"></span>Live</span>
+                <span class="mc-stage">Group A</span>
+              </div>
+              <div class="teams">
+                <span class="flag">🇲🇽</span>
+                <span>MEX</span>
+                <span class="score tnum">1</span>
+                <span class="vs">–</span>
+                <span class="score tnum">0</span>
+                <span>ARG</span>
+                <span class="flag">🇦🇷</span>
+              </div>
+              <div class="meta">67' · 4 watching · 22 drinks</div>
+            </div>
+            <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <div class="sg-caption" style="margin-bottom: 10px;">Stamp row · horizontal scroll of beer chips</div>
+        <div style="max-width: 360px; background: var(--foam); padding: 16px; border-radius: var(--r-md);">
+          <div class="caps-label" style="margin-bottom: 10px;">🛂 Stamp Mexico</div>
+          <div style="display: flex; gap: 10px; overflow-x: auto;">
+            <div class="beer-chip claimed"><div class="bottle"></div><div class="name">Modelo<br/>Especial</div></div>
+            <div class="beer-chip claimed"><div class="bottle"></div><div class="name">Pacifico</div></div>
+            <div class="beer-chip"><div class="bottle"></div><div class="name">Corona</div></div>
+            <div class="beer-chip"><div class="bottle"></div><div class="name">Victoria</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- POUR BUTTON -->
+  <section class="sg-section">
+    <h2>The Pour button</h2>
+    <p class="sg-desc">Lives in the middle of the live-match screen. ≈ 50% viewport height. Pour fill, Stout text. The only place this button exists.</p>
+    <div class="sg-block" style="display: flex; justify-content: center; padding: 32px;">
+      <button class="pour-btn">
+        <div style="display: flex; flex-direction: column; align-items: center;">
+          <span style="font-size: 56px; line-height: 0.9;">+1</span>
+          <span class="pour-sub">WCC · Tap</span>
+        </div>
+      </button>
+    </div>
+  </section>
+
+  <!-- MOTION -->
+  <section class="sg-section">
+    <h2>Motion</h2>
+    <p class="sg-desc">No bouncy springs. No emoji rain. Just confident, short transitions.</p>
+    <div class="motion-grid">
+      <div class="motion-card">
+        <span class="caps-label">Tap to pour</span>
+        <span class="mc-title">Scale + bubble rise</span>
+        <span class="mc-spec">1.04× · 180ms · ease-out · single foam circle fades up behind</span>
+      </div>
+      <div class="motion-card">
+        <span class="caps-label">Stamp claim</span>
+        <span class="mc-title">Flag burst + WCP tick</span>
+        <span class="mc-spec">400ms · ease-out · "+1 WCP" ticker</span>
+      </div>
+      <div class="motion-card">
+        <span class="caps-label">Pick correct</span>
+        <span class="mc-title">Pitch check + count-up</span>
+        <span class="mc-spec">600ms · ease-out · post-match</span>
+      </div>
+      <div class="motion-card">
+        <span class="caps-label">Pick wrong</span>
+        <span class="mc-title">Muted shake</span>
+        <span class="mc-spec">200ms · ±4px · no bounce</span>
+      </div>
+      <div class="motion-card">
+        <span class="caps-label">Live drink bars</span>
+        <span class="mc-title">Width transition</span>
+        <span class="mc-spec">300ms · ease · smooth · no overshoot</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATES -->
+  <section class="sg-section">
+    <h2>States</h2>
+    <p class="sg-desc">Skeletons (no spinners). Errors say what happened and offer the next move.</p>
+    <div class="sg-block">
+      <div class="state-grid">
+        <div class="state-cell">
+          <div class="skel block" style="width: 220px;"></div>
+          <div class="sc-cap">Block skeleton</div>
+        </div>
+        <div class="state-cell">
+          <div style="width: 220px; padding: 16px; text-align: center;">
+            <div class="empty-lead">Quiet day.</div>
+            <div class="empty-sub">Tomorrow: 3 matches.</div>
+          </div>
+          <div class="sc-cap">Empty</div>
+        </div>
+        <div class="state-cell">
+          <div class="error-block" style="width: 240px;">
+            <div class="error-lead">Couldn't reach the scoreboard.</div>
+            <button class="btn primary sm">Tap again</button>
+          </div>
+          <div class="sc-cap">Error</div>
+        </div>
+        <div class="state-cell">
+          <div class="badge live"><span class="dot"></span>Live</div>
+          <div class="sc-cap">Live (pulse)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VOICE -->
+  <section class="sg-section">
+    <h2>Voice</h2>
+    <p class="sg-desc">Pub bartender with a design degree. Confident, warm, dry. Numbers loud, language quiet.</p>
+    <div class="sg-block" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div style="padding: 16px; background: rgba(58, 107, 46, 0.08); border-radius: var(--r-md);">
+        <div class="caps-label" style="color: var(--pitch);">Say this</div>
+        <div class="t-body" style="margin-top: 8px; font-family: var(--ff-display); font-weight: 600;">"Tap to pour a WCC."</div>
+        <div class="t-body" style="margin-top: 4px; font-family: var(--ff-display); font-weight: 600;">"Pick locks in 12 min."</div>
+        <div class="t-body" style="margin-top: 4px; font-family: var(--ff-display); font-weight: 600;">"Sam's pulling ahead — 6 to 4."</div>
+        <div class="t-body" style="margin-top: 4px; font-family: var(--ff-display); font-weight: 600;">"Couldn't reach the scoreboard. Tap again."</div>
+      </div>
+      <div style="padding: 16px; background: rgba(139, 32, 24, 0.08); border-radius: var(--r-md);">
+        <div class="caps-label" style="color: var(--penalty);">Not this</div>
+        <div class="t-body" style="margin-top: 8px;">"Click to log drink."</div>
+        <div class="t-body" style="margin-top: 4px;">"Predictions closing at 19:48."</div>
+        <div class="t-body" style="margin-top: 4px;">"Sam is currently leading."</div>
+        <div class="t-body" style="margin-top: 4px;">"An error occurred while fetching live data."</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VOCAB -->
+  <section class="sg-section">
+    <h2>Vocabulary</h2>
+    <div class="sg-block" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px 28px;">
+      <div><span class="caps-label" style="color: var(--burn);">Pour</span><div class="t-small" style="margin-top: 4px;">verb · to log a drink</div></div>
+      <div><span class="caps-label" style="color: var(--burn);">WCC</span><div class="t-small" style="margin-top: 4px;">the unit · World Cup Cup</div></div>
+      <div><span class="caps-label" style="color: var(--burn);">Stamp</span><div class="t-small" style="margin-top: 4px;">verb · claim a country beer</div></div>
+      <div><span class="caps-label" style="color: var(--burn);">Passport</span><div class="t-small" style="margin-top: 4px;">noun · your collection</div></div>
+      <div><span class="caps-label" style="color: var(--burn);">Pick</span><div class="t-small" style="margin-top: 4px;">noun · prediction</div></div>
+      <div><span class="caps-label" style="color: var(--burn);">Stake</span><div class="t-small" style="margin-top: 4px;">verb · WCC riding on a pick</div></div>
+      <div><span class="caps-label" style="color: var(--burn);">WCP</span><div class="t-small" style="margin-top: 4px;">prediction points</div></div>
+      <div><span class="caps-label" style="color: var(--burn);">Total</span><div class="t-small" style="margin-top: 4px;">WCC + WCP, the headline</div></div>
+      <div><span class="caps-label" style="color: var(--burn);">Lock</span><div class="t-small" style="margin-top: 4px;">verb · when picks close</div></div>
+    </div>
+  </section>
+
+</div>
+
+</body>
+</html>

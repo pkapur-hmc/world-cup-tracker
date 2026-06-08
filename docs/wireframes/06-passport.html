@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WCC · Passport</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .claimed-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .claimed-card {
+    background: var(--bubble);
+    border: 1px solid var(--stout-12);
+    border-radius: var(--r-md);
+    padding: 14px 12px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+  }
+  .claimed-card .stamp-circle {
+    width: 76px; height: 76px;
+    border: 2.5px solid var(--burn);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--foam);
+    position: relative;
+  }
+  .claimed-card .stamp-circle .ring {
+    position: absolute;
+    inset: 4px;
+    border: 1.5px dashed var(--burn);
+    border-radius: 50%;
+    opacity: 0.5;
+  }
+  .claimed-card .stamp-circle .country-flag { font-size: 36px; line-height: 1; }
+  .claimed-card .country { font-family: var(--ff-display); font-weight: 800; font-size: 16px; }
+  .claimed-card .beer { font-family: var(--ff-ui); font-weight: 500; font-size: 12px; color: var(--stout-70); text-align: center; line-height: 1.3; }
+  .claimed-card .date { font-family: var(--ff-ui); font-weight: 700; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--stout-55); }
+  .claimed-card .stamp-mark {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--burn);
+    display: grid; place-items: center;
+    color: var(--foam-lit);
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .unclaimed-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .unclaimed-cell {
+    aspect-ratio: 1 / 1;
+    background: var(--paper);
+    border: 1.5px dashed var(--stout-35);
+    border-radius: var(--r-md);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    font-size: 22px;
+    filter: grayscale(1);
+    opacity: 0.45;
+    position: relative;
+  }
+  .unclaimed-cell:hover { opacity: 0.7; }
+  .unclaimed-cell.revealed {
+    background: var(--bubble);
+    border-style: solid;
+    border-color: var(--stout-12);
+    opacity: 1;
+    filter: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px;
+  }
+  .unclaimed-cell.revealed .ucr-flag { font-size: 22px; }
+  .unclaimed-cell.revealed .ucr-code { font-family: var(--ff-ui); font-weight: 700; font-size: 10px; }
+  .unclaimed-cell.revealed .ucr-when { font-size: 9px; color: var(--stout-55); text-align: center; line-height: 1.1; }
+
+  /* progress bar */
+  .pp-progress {
+    height: 8px;
+    background: var(--paper);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .pp-progress .fill {
+    height: 100%;
+    background: var(--pour);
+    border-radius: 999px;
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- ========== PASSPORT · default ========== -->
+  <div class="phone" data-screen-label="Passport / default">
+
+    <div class="status-bar">
+      <span>9:47</span>
+      <span class="sb-right">
+        <svg width="18" height="11" viewBox="0 0 18 11"><g fill="#1C140C"><rect x="0" y="6" width="3" height="5" rx="0.5"/><rect x="5" y="3" width="3" height="8" rx="0.5"/><rect x="10" y="0" width="3" height="11" rx="0.5"/></g></svg>
+        <svg width="14" height="11" viewBox="0 0 14 11" fill="none"><path d="M7 9.5C7 9.5 5.2 7.5 2.5 7.5C1.5 7.5 1 7 1 6V4C1 3 2 2.5 3 2.5C5 2.5 7 1 7 1S9 2.5 11 2.5C12 2.5 13 3 13 4V6C13 7 12.5 7.5 11.5 7.5C8.8 7.5 7 9.5 7 9.5Z" stroke="#1C140C" stroke-width="1.2"/></svg>
+        <svg width="24" height="11" viewBox="0 0 24 11"><rect x="0.5" y="0.5" width="20" height="10" rx="2.5" fill="none" stroke="#1C140C" stroke-opacity="0.5"/><rect x="2" y="2" width="15" height="7" rx="1" fill="#1C140C"/><rect x="21" y="3.5" width="1.5" height="4" rx="0.5" fill="#1C140C" fill-opacity="0.5"/></svg>
+      </span>
+    </div>
+
+    <div class="appbar">
+      <div style="flex: 1;">
+        <div class="caps-label" style="color: var(--burn);">🛂 Your passport</div>
+        <div class="t-h1" style="margin-top: 2px;"><span class="tnum">8</span> <span class="muted" style="font-weight: 600;">of</span> <span class="tnum">48</span></div>
+        <div class="pp-progress"><div class="fill" style="width: 16.6%;"></div></div>
+      </div>
+    </div>
+
+    <div class="screen" style="gap: 14px;">
+
+      <!-- CLAIMED -->
+      <div>
+        <div class="section-label">
+          <span class="caps-label">Claimed · 8</span>
+          <span class="t-small muted">Most recent first</span>
+        </div>
+        <div class="claimed-grid">
+          <div class="claimed-card">
+            <div class="stamp-mark">✓</div>
+            <div class="stamp-circle">
+              <div class="ring"></div>
+              <span class="country-flag">🇲🇽</span>
+            </div>
+            <div class="country">Mexico</div>
+            <div class="beer">Modelo Especial</div>
+            <div class="date">Jun 11 · vs ARG</div>
+          </div>
+          <div class="claimed-card">
+            <div class="stamp-mark">✓</div>
+            <div class="stamp-circle">
+              <div class="ring"></div>
+              <span class="country-flag">🇩🇪</span>
+            </div>
+            <div class="country">Germany</div>
+            <div class="beer">Weihenstephaner</div>
+            <div class="date">Jun 10 · friendly</div>
+          </div>
+          <div class="claimed-card">
+            <div class="stamp-mark">✓</div>
+            <div class="stamp-circle">
+              <div class="ring"></div>
+              <span class="country-flag">🇧🇪</span>
+            </div>
+            <div class="country">Belgium</div>
+            <div class="beer">Duvel</div>
+            <div class="date">Jun 8 · friendly</div>
+          </div>
+          <div class="claimed-card">
+            <div class="stamp-mark">✓</div>
+            <div class="stamp-circle">
+              <div class="ring"></div>
+              <span class="country-flag">🇯🇵</span>
+            </div>
+            <div class="country">Japan</div>
+            <div class="beer">Asahi Super Dry</div>
+            <div class="date">Jun 7 · friendly</div>
+          </div>
+        </div>
+        <button class="btn ghost block" style="margin-top: 10px; color: var(--burn);">Show 4 more →</button>
+      </div>
+
+      <!-- UNCLAIMED -->
+      <div>
+        <div class="section-label" style="margin-top: 6px;">
+          <span class="caps-label">Unclaimed · 40</span>
+          <span class="t-small muted">Tap to peek</span>
+        </div>
+        <div class="unclaimed-grid">
+          <div class="unclaimed-cell revealed" title="Tapped">
+            <span class="ucr-flag">🇧🇷</span>
+            <span class="ucr-code">BRA</span>
+            <span class="ucr-when">Jun 11 · vs MAR</span>
+          </div>
+          <div class="unclaimed-cell">🇦🇷</div>
+          <div class="unclaimed-cell">🇫🇷</div>
+          <div class="unclaimed-cell">🇪🇸</div>
+          <div class="unclaimed-cell">🇵🇹</div>
+          <div class="unclaimed-cell">🇮🇹</div>
+          <div class="unclaimed-cell">🇳🇱</div>
+          <div class="unclaimed-cell">🇬🇧</div>
+          <div class="unclaimed-cell">🇺🇸</div>
+          <div class="unclaimed-cell">🇨🇦</div>
+          <div class="unclaimed-cell">🇨🇴</div>
+          <div class="unclaimed-cell">🇺🇾</div>
+          <div class="unclaimed-cell">🇲🇦</div>
+          <div class="unclaimed-cell">🇸🇳</div>
+          <div class="unclaimed-cell">🇬🇭</div>
+          <div class="unclaimed-cell">🇰🇷</div>
+          <div class="unclaimed-cell">🇸🇦</div>
+          <div class="unclaimed-cell">🇦🇺</div>
+          <div class="unclaimed-cell">🇳🇿</div>
+          <div class="unclaimed-cell">🇨🇭</div>
+        </div>
+      </div>
+
+      <div style="height: 8px;"></div>
+    </div>
+
+    <nav class="tabbar">
+      <a class="tab" href="01-home.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 11L12 3l9 8v9a1 1 0 01-1 1h-5v-7h-6v7H4a1 1 0 01-1-1v-9z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Home</a>
+      <a class="tab" href="03-schedule.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Schedule</a>
+      <a class="tab" href="05-leaderboard.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M8 21h8M12 17v4M6 4h12v4a6 6 0 01-12 0V4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M18 5h3v3a3 3 0 01-3 3M6 5H3v3a3 3 0 003 3" stroke="currentColor" stroke-width="1.8"/></svg>Leaderboard</a>
+      <a class="tab is-active" href="06-passport.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="1.5" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="11" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M9 18h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Passport<span class="tab-dot"></span></a>
+    </nav>
+  </div>
+
+  <!-- STATES -->
+  <div class="state-rail">
+    <div class="stage-label">Empty · Loading · Error</div>
+    <div class="phone-row triple">
+
+      <!-- EMPTY -->
+      <div class="phone" data-screen-label="Passport / empty" style="min-height: 760px;">
+        <div class="status-bar"><span>9:47</span><span class="sb-right tnum">●●●</span></div>
+        <div class="appbar">
+          <div style="flex: 1;">
+            <div class="caps-label" style="color: var(--burn);">🛂 Your passport</div>
+            <div class="t-h1" style="margin-top: 2px;"><span class="tnum">0</span> <span class="muted" style="font-weight: 600;">of</span> <span class="tnum">48</span></div>
+            <div class="pp-progress"><div class="fill" style="width: 0%;"></div></div>
+          </div>
+        </div>
+        <div class="screen">
+          <div class="empty-block" style="margin-top: 24px;">
+            <div class="empty-lead">Fresh booklet.</div>
+            <div class="empty-sub">Pour a country beer during their match to stamp it.</div>
+            <button class="btn primary sm">See schedule</button>
+          </div>
+          <div class="section-label" style="margin-top: 16px;"><span class="caps-label">First chance</span></div>
+          <div class="card">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span class="flag xl">🇲🇽</span>
+              <div>
+                <div class="t-sub">Mexico vs Argentina</div>
+                <div class="t-small muted">Today · 9:00 ET · 6 beers to try</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOADING -->
+      <div class="phone" data-screen-label="Passport / loading" style="min-height: 760px;">
+        <div class="status-bar"><span>9:47</span><span class="sb-right tnum">●●●</span></div>
+        <div class="appbar">
+          <div style="flex: 1;">
+            <div class="skel" style="width: 140px; height: 11px;"></div>
+            <div class="skel lg" style="width: 100px; margin-top: 8px;"></div>
+            <div class="pp-progress" style="margin-top: 10px;"><div class="fill skel" style="width: 30%;"></div></div>
+          </div>
+        </div>
+        <div class="screen">
+          <div class="skel" style="width: 110px; height: 12px;"></div>
+          <div class="claimed-grid">
+            <div class="skel" style="height: 170px; border-radius: var(--r-md);"></div>
+            <div class="skel" style="height: 170px; border-radius: var(--r-md);"></div>
+          </div>
+          <div class="skel" style="width: 130px; height: 12px; margin-top: 8px;"></div>
+          <div class="unclaimed-grid">
+            <div class="skel" style="aspect-ratio: 1/1; border-radius: var(--r-md);"></div>
+            <div class="skel" style="aspect-ratio: 1/1; border-radius: var(--r-md);"></div>
+            <div class="skel" style="aspect-ratio: 1/1; border-radius: var(--r-md);"></div>
+            <div class="skel" style="aspect-ratio: 1/1; border-radius: var(--r-md);"></div>
+            <div class="skel" style="aspect-ratio: 1/1; border-radius: var(--r-md);"></div>
+            <div class="skel" style="aspect-ratio: 1/1; border-radius: var(--r-md);"></div>
+            <div class="skel" style="aspect-ratio: 1/1; border-radius: var(--r-md);"></div>
+            <div class="skel" style="aspect-ratio: 1/1; border-radius: var(--r-md);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ERROR -->
+      <div class="phone" data-screen-label="Passport / error" style="min-height: 760px;">
+        <div class="status-bar"><span>9:47</span><span class="sb-right tnum">●●●</span></div>
+        <div class="appbar">
+          <div style="flex: 1;">
+            <div class="caps-label" style="color: var(--burn);">🛂 Your passport</div>
+            <div class="t-h1" style="margin-top: 2px;"><span class="tnum">8</span> <span class="muted" style="font-weight: 600;">of</span> <span class="tnum">48</span></div>
+          </div>
+        </div>
+        <div class="screen">
+          <div class="error-block">
+            <div class="error-lead">Couldn't load fresh stamps.</div>
+            <div class="t-small muted">Showing what we've saved locally.</div>
+            <button class="btn primary sm">Tap again</button>
+          </div>
+          <div class="section-label" style="margin-top: 12px;"><span class="caps-label">Cached</span></div>
+          <div class="claimed-grid" style="opacity: 0.7;">
+            <div class="claimed-card">
+              <div class="stamp-circle"><div class="ring"></div><span class="country-flag">🇲🇽</span></div>
+              <div class="country">Mexico</div>
+              <div class="beer">Modelo Especial</div>
+              <div class="date">Jun 11</div>
+            </div>
+            <div class="claimed-card">
+              <div class="stamp-circle"><div class="ring"></div><span class="country-flag">🇩🇪</span></div>
+              <div class="country">Germany</div>
+              <div class="beer">Weihenstephaner</div>
+              <div class="date">Jun 10</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

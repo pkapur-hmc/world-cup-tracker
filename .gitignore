@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# raw downloads (re-downloadable from source)
+/data/raw/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

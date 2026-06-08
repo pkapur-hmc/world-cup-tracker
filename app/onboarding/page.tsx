@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import Image from "next/image";
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingForm } from "./onboarding-form";
 
@@ -8,28 +10,36 @@ export default async function OnboardingPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/");
+  if (!user) redirect("/welcome");
 
-  // If they're already in a group, skip onboarding
   const { data: memberships } = await supabase
     .from("wc_memberships")
     .select("group_id")
     .limit(1);
 
   if (memberships && memberships.length > 0) {
-    redirect("/drinker");
+    redirect("/");
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl font-semibold">Welcome</h1>
-          <p className="text-sm text-zinc-500">
-            Create a new watch group or join one with an invite code.
-          </p>
+    <main
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", gap: 20 }}>
+        <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+          <Image src="/mark.svg" alt="" width={48} height={48} priority />
+          <div className="t-h1">One more thing</div>
+          <div className="t-small muted">Create a watch group or join one with an invite code.</div>
         </div>
-        <OnboardingForm />
+        <Suspense fallback={<div className="t-small muted">Loading...</div>}>
+          <OnboardingForm />
+        </Suspense>
       </div>
     </main>
   );

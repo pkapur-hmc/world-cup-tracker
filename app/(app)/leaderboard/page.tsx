@@ -1,0 +1,196 @@
+import Link from "next/link";
+import { getCurrentMembership } from "@/lib/membership";
+import { createClient } from "@/lib/supabase/server";
+import { computeMemberStats, assignFlavorLabels, type LeaderboardRow, type MatchLite, type DrinkRow, type PickRow } from "@/lib/scoring";
+
+type SortKey = "total" | "drinks" | "wcc" | "wcp" | "stamps";
+
+const SORTS: { key: SortKey; label: string }[] = [
+  { key: "total", label: "Total" },
+  { key: "drinks", label: "Drinks" },
+  { key: "wcc", label: "WCC" },
+  { key: "wcp", label: "WCP" },
+  { key: "stamps", label: "Stamps" },
+];
+
+export default async function LeaderboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sort?: string }>;
+}) {
+  const params = await searchParams;
+  const sort: SortKey = (SORTS.find((s) => s.key === params.sort)?.key as SortKey) ?? "total";
+
+  const member = await getCurrentMembership();
+  if (!member) return null;
+
+  const supabase = await createClient();
+  const [{ data: members }, { data: drinks }, { data: picks }, { data: matches }] = await Promise.all([
+    supabase
+      .from("wc_memberships")
+      .select("user_id, display_name, role")
+      .eq("group_id", member.groupId),
+    supabase
+      .from("wc_drinks")
+      .select("user_id, match_id, country_code")
+      .eq("group_id", member.groupId),
+    supabase
+      .from("wc_picks")
+      .select("user_id, match_id, pick, stake, settled_at, payout_wcc, payout_wcp")
+      .eq("group_id", member.groupId),
+    supabase.from("wc_matches").select("id, team_a_code, team_b_code"),
+  ]);
+
+  const matchesById = new Map<number, MatchLite>();
+  for (const m of (matches ?? []) as MatchLite[]) matchesById.set(m.id, m);
+
+  const drinksByUser = new Map<string, DrinkRow[]>();
+  for (const d of (drinks ?? []) as DrinkRow[] & { user_id: string }[]) {
+    const u = (d as { user_id: string }).user_id;
+    const arr = drinksByUser.get(u) ?? [];
+    arr.push({ match_id: d.match_id, country_code: d.country_code });
+    drinksByUser.set(u, arr);
+  }
+
+  const picksByUser = new Map<string, PickRow[]>();
+  for (const p of (picks ?? []) as (PickRow & { user_id: string })[]) {
+    const u = p.user_id;
+    const arr = picksByUser.get(u) ?? [];
+    arr.push({
+      match_id: p.match_id,
+      pick: p.pick,
+      stake: p.stake,
+      settled_at: p.settled_at,
+      payout_wcc: p.payout_wcc,
+      payout_wcp: p.payout_wcp,
+    });
+    picksByUser.set(u, arr);
+  }
+
+  const rows: LeaderboardRow[] = ((members ?? []) as { user_id: string; display_name: string; role: "host" | "member" }[]).map(
+    (m) => {
+      const myDrinks = drinksByUser.get(m.user_id) ?? [];
+      const myPicks = picksByUser.get(m.user_id) ?? [];
+      const stats = computeMemberStats(myDrinks, myPicks, matchesById);
+      const settled = myPicks.filter((p) => p.settled_at);
+      const correct = settled.filter((p) => p.payout_wcp > 0).length;
+      // single-match record
+      const counts = new Map<number, number>();
+      for (const d of myDrinks) {
+        if (d.match_id != null) counts.set(d.match_id, (counts.get(d.match_id) ?? 0) + 1);
+      }
+      const singleMax = counts.size === 0 ? 0 : Math.max(...counts.values());
+      return {
+        userId: m.user_id,
+        displayName: m.display_name,
+        stats,
+        picksMade: settled.length,
+        picksCorrect: correct,
+        singleMatchRecord: singleMax,
+      };
+    },
+  );
+
+  const labels = assignFlavorLabels(rows);
+
+  // sort
+  const sortVal = (r: LeaderboardRow): number => {
+    switch (sort) {
+      case "drinks": return r.stats.drinks;
+      case "wcc": return r.stats.wcc;
+      case "wcp": return r.stats.wcp;
+      case "stamps": return r.stats.stamps;
+      default: return r.stats.total;
+    }
+  };
+  const sorted = rows.slice().sort((a, b) => sortVal(b) - sortVal(a));
+
+  // assign tie-aware ranks: same sortVal -> same rank, prefixed "T-" if tied
+  const ranked: (LeaderboardRow & { rank: string; rawRank: number })[] = [];
+  let prev: number | null = null;
+  let prevRank = 0;
+  sorted.forEach((r, i) => {
+    const v = sortVal(r);
+    const rawRank = v === prev ? prevRank : i + 1;
+    if (v !== prev) prevRank = rawRank;
+    prev = v;
+    ranked.push({ ...r, rank: "", rawRank });
+  });
+  // figure out which raw ranks have ties
+  const tieRanks = new Set<number>();
+  const seen = new Map<number, number>();
+  for (const r of ranked) seen.set(r.rawRank, (seen.get(r.rawRank) ?? 0) + 1);
+  for (const [rk, c] of seen) if (c > 1) tieRanks.add(rk);
+  for (const r of ranked) r.rank = tieRanks.has(r.rawRank) ? `T-${r.rawRank}` : String(r.rawRank);
+
+  return (
+    <>
+      <div className="appbar">
+        <div style={{ flex: 1 }}>
+          <div className="t-h1">Leaderboard</div>
+          <div className="t-small muted">
+            {member.groupName} · {member.memberCount} in
+          </div>
+        </div>
+      </div>
+
+      <div className="screen" style={{ gap: 12 }}>
+        <div className="chip-row">
+          {SORTS.map((s) => (
+            <Link
+              key={s.key}
+              href={s.key === "total" ? "/leaderboard" : `/leaderboard?sort=${s.key}`}
+              className={`chip ${sort === s.key ? "is-active" : ""}`}
+              style={{ textDecoration: "none" }}
+            >
+              {s.label}
+            </Link>
+          ))}
+        </div>
+
+        {ranked.length === 0 ? (
+          <div className="card empty-block" style={{ textAlign: "center" }}>
+            <div className="empty-lead">Nothing tallied yet.</div>
+            <div className="empty-sub">First whistle June 11. Pick to get on the board.</div>
+          </div>
+        ) : null}
+
+        <div>
+          {ranked.map((r) => {
+            const isYou = r.userId === member.userId;
+            const isTop = r.rawRank <= 3;
+            return (
+              <div
+                key={r.userId}
+                className={`lb-row ${isTop ? "top" : ""} ${isYou ? "you" : ""}`}
+              >
+                <span className="rank">{r.rank}</span>
+                <div className="avatar">{r.displayName.slice(0, 1).toUpperCase()}</div>
+                <div className="who">
+                  <div className="name">{isYou ? "You" : r.displayName}</div>
+                  {labels.get(r.userId) ? (
+                    <div className="flavor">{labels.get(r.userId)}</div>
+                  ) : null}
+                  <div className="mini-stats tnum">
+                    {r.stats.drinks} · {r.stats.wcc} · {r.stats.wcp} · 🛂 {r.stats.stamps}
+                  </div>
+                </div>
+                <div
+                  className="total-num"
+                  style={isYou ? { color: "var(--burn)" } : undefined}
+                >
+                  {sortVal(r)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="t-small muted" style={{ textAlign: "center", marginTop: 4 }}>
+          Live · pulls from the tap.
+        </div>
+        <div style={{ height: 16 }} />
+      </div>
+    </>
+  );
+}
