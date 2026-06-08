@@ -32,7 +32,6 @@ export default async function SettingsPage() {
             userId={me.userId}
             displayName={me.displayName}
             avatarUrl={me.avatarUrl}
-            groupName={me.groupName}
           />
         </section>
 
@@ -58,18 +57,6 @@ export default async function SettingsPage() {
             }}
           >
             <span>+ Join or start another bracket</span>
-            <span className="dim">›</span>
-          </Link>
-          <Link
-            href="/group"
-            className="btn ghost block"
-            style={{
-              marginTop: 8,
-              justifyContent: "space-between",
-              textDecoration: "none",
-            }}
-          >
-            <span>Manage bracket · members, name, host</span>
             <span className="dim">›</span>
           </Link>
         </section>

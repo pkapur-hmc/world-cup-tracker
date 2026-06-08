@@ -9,12 +9,10 @@ export function AvatarUploader({
   userId,
   displayName,
   avatarUrl,
-  groupName,
 }: {
   userId: string;
   displayName: string;
   avatarUrl: string | null;
-  groupName: string;
 }) {
   const [photo, setPhoto] = useState<string | null>(avatarUrl);
   const [busy, startTransition] = useTransition();
@@ -107,7 +105,7 @@ export function AvatarUploader({
       </button>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="t-sub" style={{ fontSize: 17 }}>{displayName}</div>
-        <div className="t-small muted">Active bracket · {groupName}</div>
+        <div className="t-small muted">Photo shows in every bracket</div>
         <button
           type="button"
           className="link"

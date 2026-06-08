@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { inviteUrlFor } from "@/lib/origin";
 import type { GroupMembershipSummary } from "@/lib/membership";
@@ -76,13 +77,22 @@ export function GroupsList({ groups }: { groups: GroupMembershipSummary[] }) {
               <strong className="tnum">{g.inviteCode}</strong>
             </div>
           </div>
-          <button
-            type="button"
-            className="btn secondary sm"
-            onClick={() => shareOrCopy(g)}
-          >
-            {copiedId === g.groupId ? "Copied!" : "Share invite"}
-          </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "stretch" }}>
+            <button
+              type="button"
+              className="btn secondary sm"
+              onClick={() => shareOrCopy(g)}
+            >
+              {copiedId === g.groupId ? "Copied!" : "Share invite"}
+            </button>
+            <Link
+              href={{ pathname: "/group", query: { bracket: g.groupId } }}
+              className="t-small"
+              style={{ color: "var(--burn)", fontWeight: 700, textDecoration: "none", textAlign: "center" }}
+            >
+              Manage →
+            </Link>
+          </div>
         </div>
       ))}
     </div>
