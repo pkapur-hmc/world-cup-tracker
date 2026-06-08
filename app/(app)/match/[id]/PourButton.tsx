@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { pourAction, undoLastBasicForMatchAction } from "./actions";
 import { WccIcon } from "@/components/ui/CurrencyIcon";
 
@@ -34,6 +34,14 @@ export function PourButton({
 
   const country = toNum(countryCount);
   const matchTotal = basicCount + country;
+
+  // Resync the all-time total when the server prop changes from outside
+  // (e.g. BeerStampRail logged a country beer, server action revalidated).
+  // Skip while a basic +/- is in flight - our own optimistic value is fresher.
+  useEffect(() => {
+    if (pending) return;
+    setTotalOptim(toNum(totalAllTime));
+  }, [totalAllTime, pending]);
 
   function plus() {
     setErr(null);
