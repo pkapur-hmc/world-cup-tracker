@@ -11,6 +11,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
   const [mode, setMode] = useState<Mode>("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,18 +53,42 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
         disabled={busy}
         aria-label="Email"
       />
-      <input
-        className="input"
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-        minLength={6}
-        autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
-        disabled={busy}
-        aria-label="Password"
-      />
+      <div style={{ position: "relative" }}>
+        <input
+          className="input"
+          type={showPassword ? "text" : "password"}
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={6}
+          autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+          disabled={busy}
+          aria-label="Password"
+          style={{ paddingRight: 52, width: "100%" }}
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword((v) => !v)}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+          aria-pressed={showPassword}
+          className="t-small muted"
+          style={{
+            position: "absolute",
+            right: 8,
+            top: "50%",
+            transform: "translateY(-50%)",
+            background: "none",
+            border: 0,
+            padding: "4px 8px",
+            cursor: "pointer",
+          }}
+          disabled={busy}
+          tabIndex={-1}
+        >
+          {showPassword ? "Hide" : "Show"}
+        </button>
+      </div>
       {error ? <p className="t-small" style={{ color: "var(--penalty)" }}>{error}</p> : null}
       <button type="submit" className="btn primary block" disabled={busy}>
         {submitLabel}
