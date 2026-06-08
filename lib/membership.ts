@@ -90,6 +90,65 @@ export const getCurrentMembership = cache(async (): Promise<CurrentMembership | 
   };
 });
 
+export type BracketMember = {
+  userId: string;
+  displayName: string;
+  role: "host" | "member";
+  avatarUrl: string | null;
+};
+
+/** Every person across every bracket this user belongs to, deduped by user_id.
+ *  Used by match-page picks/drinks/watching panels so you see everyone you've
+ *  ever bracketed with in one place. */
+export const getCrossBracketMembers = cache(
+  async (userId: string): Promise<BracketMember[]> => {
+    const supabase = await createClient();
+
+    const { data: myRows } = await supabase
+      .from("wc_memberships")
+      .select("group_id")
+      .eq("user_id", userId);
+    const groupIds = ((myRows ?? []) as { group_id: string }[]).map((r) => r.group_id);
+    if (groupIds.length === 0) return [];
+
+    const withAvatar = await supabase
+      .from("wc_memberships")
+      .select("user_id, display_name, avatar_url, role")
+      .in("group_id", groupIds);
+    let rows: { user_id: string; display_name: string; avatar_url: string | null; role: "host" | "member" }[] = [];
+    if (!withAvatar.error && withAvatar.data) {
+      rows = withAvatar.data as typeof rows;
+    } else {
+      const fallback = await supabase
+        .from("wc_memberships")
+        .select("user_id, display_name, role")
+        .in("group_id", groupIds);
+      rows = ((fallback.data ?? []) as Omit<typeof rows[number], "avatar_url">[]).map((r) => ({
+        ...r,
+        avatar_url: null,
+      }));
+    }
+
+    // Dedupe by user_id - the user might appear in multiple brackets and
+    // their friends might too. Prefer the first display_name we see for each
+    // user; in practice it's the same since display_name is per-user-per-bracket
+    // and people tend to use the same name everywhere.
+    const seen = new Set<string>();
+    const out: BracketMember[] = [];
+    for (const r of rows) {
+      if (seen.has(r.user_id)) continue;
+      seen.add(r.user_id);
+      out.push({
+        userId: r.user_id,
+        displayName: r.display_name,
+        role: r.role,
+        avatarUrl: r.avatar_url ?? null,
+      });
+    }
+    return out;
+  },
+);
+
 /** Every group this user belongs to, with member counts. Use for the
  *  Settings group switcher / multi-bracket view. */
 export const getAllMemberships = cache(async (): Promise<GroupMembershipSummary[]> => {

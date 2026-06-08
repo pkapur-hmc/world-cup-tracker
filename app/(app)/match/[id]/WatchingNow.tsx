@@ -16,16 +16,15 @@ export type WatchingMember = {
 
 export function WatchingNow({
   matchId,
-  groupId,
-  groupName,
+  userIds,
   initialMembers,
 }: {
   matchId: number;
-  groupId: string;
-  groupName: string;
+  userIds: string[];
   initialMembers: WatchingMember[];
 }) {
   const [members, setMembers] = useState<WatchingMember[]>(initialMembers);
+  const userIdsKey = userIds.join(",");
 
   // Ping presence on mount + every 60s
   useEffect(() => {
@@ -36,8 +35,12 @@ export function WatchingNow({
     return () => clearInterval(ping);
   }, [matchId]);
 
-  // Poll for latest watching+drinks every 10s
+  // Poll for latest watching+drinks every 10s. Cross-bracket: filters by
+  // user_id IN (...) instead of by group_id, so you see everyone you've ever
+  // bracketed with in any of your brackets.
   useEffect(() => {
+    if (!userIdsKey) return;
+    const ids = userIdsKey.split(",");
     const supabase = createClient();
     let cancelled = false;
     async function refresh() {
@@ -47,14 +50,14 @@ export function WatchingNow({
         supabase
           .from("wc_events")
           .select("user_id")
-          .eq("group_id", groupId)
+          .in("user_id", ids)
           .eq("match_id", matchId)
           .eq("kind", "watching")
           .gte("created_at", sinceIso),
         supabase
           .from("wc_drinks")
           .select("user_id")
-          .eq("group_id", groupId)
+          .in("user_id", ids)
           .eq("match_id", matchId),
       ]);
       if (cancelled) return;
@@ -81,7 +84,7 @@ export function WatchingNow({
       cancelled = true;
       clearInterval(t);
     };
-  }, [matchId, groupId]);
+  }, [matchId, userIdsKey]);
 
   const maxCount = Math.max(1, ...members.map((m) => m.drinkCount));
   const watchingCount = members.filter((m) => m.watching).length;
@@ -91,7 +94,7 @@ export function WatchingNow({
     <div className="card">
       <div className="section-label" style={{ marginBottom: 6 }}>
         <span className="caps-label" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          🏆 In {groupName}
+          🏆 Your people
         </span>
         <span className="t-small muted" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
           {watchingCount} of {members.length} watching · <WccIcon size={12} /> {totalDrinks}

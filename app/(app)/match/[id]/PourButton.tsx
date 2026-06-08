@@ -40,6 +40,7 @@ export function PourButton({
   // Skip while a basic +/- is in flight - our own optimistic value is fresher.
   useEffect(() => {
     if (pending) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTotalOptim(toNum(totalAllTime));
   }, [totalAllTime, pending]);
 

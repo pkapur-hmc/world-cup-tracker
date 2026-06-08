@@ -4,11 +4,9 @@ import { getRankInGroup } from "@/lib/stats";
 export async function BracketStandings({
   brackets,
   userId,
-  activeId,
 }: {
   brackets: { groupId: string; groupName: string; memberCount: number }[];
   userId: string;
-  activeId: string;
 }) {
   if (brackets.length === 0) return null;
 
@@ -32,7 +30,6 @@ export async function BracketStandings({
       <div className="card" style={{ padding: 0 }}>
         {brackets.map((b, i) => {
           const r = ranks[i];
-          const active = b.groupId === activeId;
           return (
             <div
               key={b.groupId}
@@ -43,7 +40,6 @@ export async function BracketStandings({
                 alignItems: "center",
                 padding: "12px 14px",
                 borderTop: i === 0 ? "none" : "1px solid var(--stout-12)",
-                background: active ? "var(--paper)" : undefined,
               }}
             >
               <div
@@ -67,22 +63,6 @@ export async function BracketStandings({
               <div style={{ minWidth: 0 }}>
                 <div className="t-sub" style={{ fontSize: 15 }}>
                   {b.groupName}
-                  {active ? (
-                    <span
-                      style={{
-                        marginLeft: 6,
-                        fontSize: 9,
-                        letterSpacing: "0.1em",
-                        background: "var(--stout)",
-                        color: "var(--foam-lit)",
-                        padding: "2px 6px",
-                        borderRadius: 4,
-                        verticalAlign: 2,
-                      }}
-                    >
-                      ACTIVE
-                    </span>
-                  ) : null}
                 </div>
                 <div className="t-small muted tnum">
                   of {r.total}

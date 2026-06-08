@@ -2,12 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getMatchById, type Match } from "@/lib/fixtures";
 import { BackButton } from "@/components/ui/BackButton";
-import { getCurrentMembership } from "@/lib/membership";
+import { getCurrentMembership, getCrossBracketMembers } from "@/lib/membership";
 import { getMemberStats } from "@/lib/stats";
 import {
-  getGroupPicksForMatch,
-  getDrinksForMatch,
-  getWatchingNow,
+  getPicksForUsersInMatch,
+  getDrinksForUsersInMatch,
+  getWatchingForUsersInMatch,
   getUserStampedBeers,
   getUserBeerCountsForMatch,
 } from "@/lib/picks";
@@ -152,7 +152,7 @@ function GroupPicksList({
   picks,
   match,
 }: {
-  picks: Awaited<ReturnType<typeof getGroupPicksForMatch>>;
+  picks: Awaited<ReturnType<typeof getPicksForUsersInMatch>>;
   match: Match;
 }) {
   function pickLabel(p: "A" | "D" | "B") {
@@ -219,7 +219,7 @@ function PostMatchSummary({
   myPick,
 }: {
   match: Match;
-  myPick: Awaited<ReturnType<typeof getGroupPicksForMatch>>[number] | undefined;
+  myPick: Awaited<ReturnType<typeof getPicksForUsersInMatch>>[number] | undefined;
 }) {
   if (!myPick || !myPick.pick) {
     return (
@@ -331,34 +331,37 @@ export default async function MatchPage({
 
   // Branch by status.
   if (match.status === "live") {
-    return <LiveView match={match} groupId={member.groupId} groupName={member.groupName} userId={member.userId} />;
+    return <LiveView match={match} userId={member.userId} />;
   }
   if (match.status === "final") {
-    return <PostView match={match} groupId={member.groupId} userId={member.userId} />;
+    return <PostView match={match} userId={member.userId} />;
   }
   // scheduled / postponed
-  return <PreView match={match} groupId={member.groupId} userId={member.userId} />;
+  return <PreView match={match} userId={member.userId} />;
 }
 
 async function LiveView({
   match,
-  groupId,
-  groupName,
   userId,
 }: {
   match: Match;
-  groupId: string;
-  groupName: string;
   userId: string;
 }) {
   const teamCodes = [match.team_a_code, match.team_b_code].filter(
     (c): c is string => !!c,
   );
+  const crossBracketMembers = await getCrossBracketMembers(userId);
+  const memberInput = crossBracketMembers.map((m) => ({
+    userId: m.userId,
+    displayName: m.displayName,
+    role: m.role,
+  }));
+  const memberIds = crossBracketMembers.map((m) => m.userId);
   const [stats, picks, drinkCounts, watching, stampedBeers, beerCounts] = await Promise.all([
-    getMemberStats(groupId, userId),
-    getGroupPicksForMatch(groupId, match.id),
-    getDrinksForMatch(groupId, match.id),
-    getWatchingNow(groupId, match.id),
+    getMemberStats("", userId),
+    getPicksForUsersInMatch(memberInput, match.id),
+    getDrinksForUsersInMatch(memberIds, match.id),
+    getWatchingForUsersInMatch(memberIds, match.id),
     getUserStampedBeers(userId),
     getUserBeerCountsForMatch(userId, match.id, teamCodes),
   ]);
@@ -473,7 +476,7 @@ async function LiveView({
           />
         ) : null}
 
-        <WatchingNow matchId={match.id} groupId={groupId} groupName={groupName} initialMembers={members} />
+        <WatchingNow matchId={match.id} userIds={memberIds} initialMembers={members} />
 
         <div style={{ height: 8 }} />
       </div>
@@ -483,16 +486,20 @@ async function LiveView({
 
 async function PreView({
   match,
-  groupId,
   userId,
 }: {
   match: Match;
-  groupId: string;
   userId: string;
 }) {
+  const crossBracketMembers = await getCrossBracketMembers(userId);
+  const memberInput = crossBracketMembers.map((m) => ({
+    userId: m.userId,
+    displayName: m.displayName,
+    role: m.role,
+  }));
   const [stats, picks] = await Promise.all([
-    getMemberStats(groupId, userId),
-    getGroupPicksForMatch(groupId, match.id),
+    getMemberStats("", userId),
+    getPicksForUsersInMatch(memberInput, match.id),
   ]);
   const my = picks.find((p) => p.userId === userId);
   const isKnockout = match.stage !== "group";
@@ -531,16 +538,21 @@ async function PreView({
 
 async function PostView({
   match,
-  groupId,
   userId,
 }: {
   match: Match;
-  groupId: string;
   userId: string;
 }) {
+  const crossBracketMembers = await getCrossBracketMembers(userId);
+  const memberInput = crossBracketMembers.map((m) => ({
+    userId: m.userId,
+    displayName: m.displayName,
+    role: m.role,
+  }));
+  const memberIds = crossBracketMembers.map((m) => m.userId);
   const [picks, drinkCounts] = await Promise.all([
-    getGroupPicksForMatch(groupId, match.id),
-    getDrinksForMatch(groupId, match.id),
+    getPicksForUsersInMatch(memberInput, match.id),
+    getDrinksForUsersInMatch(memberIds, match.id),
   ]);
   const my = picks.find((p) => p.userId === userId);
   const memberList = picks.map((p) => ({

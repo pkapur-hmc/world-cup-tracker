@@ -4,7 +4,6 @@ import { getAllMemberships, getCurrentMembership } from "@/lib/membership";
 import { BackButton } from "@/components/ui/BackButton";
 import { signOutAction } from "@/app/(app)/account-actions";
 import { AvatarUploader } from "./AvatarUploader";
-import { InviteCard } from "./InviteCard";
 import { GroupsList } from "./GroupsList";
 import { HelpCard } from "./HelpCard";
 
@@ -47,7 +46,7 @@ export default async function SettingsPage() {
                 : `in ${groups.length} brackets`}
             </span>
           </div>
-          <GroupsList groups={groups} activeGroupId={me.groupId} />
+          <GroupsList groups={groups} />
           <Link
             href="/brackets/new"
             className="btn ghost block"
@@ -61,14 +60,6 @@ export default async function SettingsPage() {
             <span>+ Join or start another bracket</span>
             <span className="dim">›</span>
           </Link>
-        </section>
-
-        {/* Active bracket: invite */}
-        <section>
-          <div className="section-label">
-            <span className="caps-label">🤝 Invite to {me.groupName}</span>
-          </div>
-          <InviteCard inviteCode={me.inviteCode} groupName={me.groupName} />
           <Link
             href="/group"
             className="btn ghost block"
@@ -78,7 +69,7 @@ export default async function SettingsPage() {
               textDecoration: "none",
             }}
           >
-            <span>Manage group · members, name, host</span>
+            <span>Manage bracket · members, name, host</span>
             <span className="dim">›</span>
           </Link>
         </section>

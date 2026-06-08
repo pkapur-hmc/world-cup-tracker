@@ -12,23 +12,17 @@ export type GroupPick = {
 };
 
 /**
- * Everyone in the group + their pick for this match (or null if not picked).
- * Used by pre-match (with hidden picks) and post-match (with results).
+ * Picks for a set of users + a match. Returns one row per input member with
+ * their (single, user-level) pick or null. Used by the match-page group-picks
+ * panel - the input list is the union of everyone across your brackets.
  */
-export async function getGroupPicksForMatch(
-  groupId: string,
+export async function getPicksForUsersInMatch(
+  members: { userId: string; displayName: string; role: "host" | "member" }[],
   matchId: number,
 ): Promise<GroupPick[]> {
   const supabase = await createClient();
+  const memberIds = members.map((m) => m.userId);
 
-  const { data: members } = await supabase
-    .from("wc_memberships")
-    .select("user_id, display_name, role")
-    .eq("group_id", groupId);
-  const memberIds = (members ?? []).map((m) => m.user_id);
-  // Picks are now user-level: a user's pick on a match is the same regardless
-  // of which bracket renders the panel. Filter by bracket *membership*, not
-  // by the pick row's stored group_id.
   const { data: picks } = memberIds.length
     ? await supabase
         .from("wc_picks")
@@ -55,11 +49,11 @@ export async function getGroupPicksForMatch(
     });
   }
 
-  return ((members ?? []) as { user_id: string; display_name: string; role: "host" | "member" }[]).map((m) => {
-    const existing = pickByUser.get(m.user_id);
+  return members.map((m) => {
+    const existing = pickByUser.get(m.userId);
     return {
-      userId: m.user_id,
-      displayName: m.display_name,
+      userId: m.userId,
+      displayName: m.displayName,
       role: m.role,
       pick: existing?.pick ?? null,
       stake: existing?.stake ?? 0,
@@ -70,16 +64,19 @@ export async function getGroupPicksForMatch(
   });
 }
 
-/** Drinks count per user for a single match (for the watching-now panel + match drinks bars). */
-export async function getDrinksForMatch(
-  groupId: string,
+/** Drinks count per user for a single match. Filters by the supplied user
+ *  set rather than by group_id - drinks are user-wide, so the "who counts"
+ *  decision belongs to the caller. */
+export async function getDrinksForUsersInMatch(
+  userIds: string[],
   matchId: number,
 ): Promise<Map<string, number>> {
+  if (userIds.length === 0) return new Map();
   const supabase = await createClient();
   const { data } = await supabase
     .from("wc_drinks")
     .select("user_id")
-    .eq("group_id", groupId)
+    .in("user_id", userIds)
     .eq("match_id", matchId);
   const counts = new Map<string, number>();
   for (const d of (data ?? []) as { user_id: string }[]) {
@@ -88,17 +85,19 @@ export async function getDrinksForMatch(
   return counts;
 }
 
-/** Currently-watching user_ids (presence pings in the last 5 min). */
-export async function getWatchingNow(
-  groupId: string,
+/** Currently-watching user_ids (presence pings in the last 5 min), restricted
+ *  to the supplied user set. */
+export async function getWatchingForUsersInMatch(
+  userIds: string[],
   matchId: number,
 ): Promise<Set<string>> {
+  if (userIds.length === 0) return new Set();
   const supabase = await createClient();
   const sinceIso = new Date(Date.now() - 5 * 60_000).toISOString();
   const { data } = await supabase
     .from("wc_events")
     .select("user_id")
-    .eq("group_id", groupId)
+    .in("user_id", userIds)
     .eq("match_id", matchId)
     .eq("kind", "watching")
     .gte("created_at", sinceIso);

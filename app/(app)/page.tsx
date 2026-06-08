@@ -1,10 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getAllMemberships, getCurrentMembership } from "@/lib/membership";
+import { getAllMemberships, getCurrentMembership, getCrossBracketMembers } from "@/lib/membership";
 import { BracketStandings } from "./BracketStandings";
 import { getLiveMatches, getNextMatch, type Match } from "@/lib/fixtures";
-import { getMemberStats, getRankInGroup } from "@/lib/stats";
-import { getGroupPicksForMatch } from "@/lib/picks";
+import { getMemberStats } from "@/lib/stats";
+import { getPicksForUsersInMatch } from "@/lib/picks";
 import { FLAG_EMOJI } from "@/data/flag-emojis";
 import { colorFor } from "@/data/country-colors";
 import { WccIcon, WcpIcon } from "@/components/ui/CurrencyIcon";
@@ -233,17 +233,26 @@ export default async function HomePage() {
   const member = await getCurrentMembership();
   if (!member) return null; // layout already handled redirects
   const allMemberships = await getAllMemberships();
+  const inMultiple = allMemberships.length > 1;
+  const soloBracket = inMultiple ? null : allMemberships[0] ?? null;
 
-  const [liveMatches, nextMatch, stats, rank] = await Promise.all([
+  const [liveMatches, nextMatch, stats, crossBracketMembers] = await Promise.all([
     getLiveMatches(),
     getNextMatch(),
-    getMemberStats(member.groupId, member.userId),
-    getRankInGroup(member.groupId, member.userId),
+    getMemberStats("", member.userId),
+    getCrossBracketMembers(member.userId),
   ]);
 
   let nextMyPick: MyPick = null;
   if (nextMatch) {
-    const picks = await getGroupPicksForMatch(member.groupId, nextMatch.id);
+    const picks = await getPicksForUsersInMatch(
+      crossBracketMembers.map((m) => ({
+        userId: m.userId,
+        displayName: m.displayName,
+        role: m.role,
+      })),
+      nextMatch.id,
+    );
     const mine = picks.find((p) => p.userId === member.userId);
     if (mine?.pick) nextMyPick = { pick: mine.pick, stake: mine.stake };
   }
@@ -253,9 +262,13 @@ export default async function HomePage() {
       <div className="appbar">
         <Image className="mark" src="/mark.svg" alt="" width={36} height={36} />
         <div>
-          <div className="group-name">{member.groupName}</div>
+          <div className="group-name">
+            {soloBracket ? soloBracket.groupName : "The World Cup Cup"}
+          </div>
           <div className="group-meta">
-            {member.memberCount} member{member.memberCount === 1 ? "" : "s"}
+            {soloBracket
+              ? `${soloBracket.memberCount} member${soloBracket.memberCount === 1 ? "" : "s"}`
+              : `In ${allMemberships.length} brackets`}
           </div>
         </div>
         <span className="spacer" />
@@ -282,7 +295,9 @@ export default async function HomePage() {
           <span className="dim">›</span>
         </Link>
 
-        <HomeInviteCard inviteCode={member.inviteCode} groupName={member.groupName} />
+        {soloBracket ? (
+          <HomeInviteCard inviteCode={soloBracket.inviteCode} groupName={soloBracket.groupName} />
+        ) : null}
 
         <BracketStandings
           brackets={allMemberships.map((g) => ({
@@ -291,15 +306,10 @@ export default async function HomePage() {
             memberCount: g.memberCount,
           }))}
           userId={member.userId}
-          activeId={member.groupId}
         />
 
         <div className="section-label" style={{ marginTop: 8 }}>
-          <span className="caps-label">Your standing in {member.groupName}</span>
-          <span className="t-small muted">
-            #{rank.rank} of {rank.total}
-            {rank.aheadName ? ` - ${rank.aheadName}'s ahead` : ""}
-          </span>
+          <span className="caps-label">Your stats</span>
         </div>
 
         <div className="card elevated">
