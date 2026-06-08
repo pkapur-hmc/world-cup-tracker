@@ -1,49 +1,43 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export function LoginForm() {
+type Mode = "sign-in" | "sign-up";
+
+export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
+  const router = useRouter();
+  const [mode, setMode] = useState<Mode>("sign-in");
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
-    "idle",
-  );
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setStatus("sending");
+    setBusy(true);
     setError(null);
 
     const supabase = createClient();
-    const redirectTo = `${window.location.origin}/auth/callback`;
-
-    const { error: authError } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: redirectTo },
-    });
+    const { error: authError } =
+      mode === "sign-in"
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({ email, password });
 
     if (authError) {
-      setStatus("error");
+      setBusy(false);
       setError(authError.message);
       return;
     }
 
-    setStatus("sent");
+    router.refresh();
+    router.replace(redirectTo);
   }
 
-  if (status === "sent") {
-    return (
-      <div className="card elevated" style={{ textAlign: "center" }}>
-        <div className="t-h2" style={{ marginBottom: 6 }}>
-          Check your email
-        </div>
-        <div className="t-small muted">
-          We sent a magic link to <strong>{email}</strong>. Click it to sign in.
-        </div>
-      </div>
-    );
-  }
+  const otherMode: Mode = mode === "sign-in" ? "sign-up" : "sign-in";
+  const submitLabel =
+    mode === "sign-in" ? (busy ? "Signing in..." : "Sign in") : busy ? "Creating..." : "Create account";
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -55,12 +49,36 @@ export function LoginForm() {
         onChange={(e) => setEmail(e.target.value)}
         required
         autoComplete="email"
-        disabled={status === "sending"}
+        disabled={busy}
         aria-label="Email"
       />
+      <input
+        className="input"
+        type="password"
+        placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+        minLength={6}
+        autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+        disabled={busy}
+        aria-label="Password"
+      />
       {error ? <p className="t-small" style={{ color: "var(--penalty)" }}>{error}</p> : null}
-      <button type="submit" className="btn primary block" disabled={status === "sending"}>
-        {status === "sending" ? "Sending..." : "Send magic link"}
+      <button type="submit" className="btn primary block" disabled={busy}>
+        {submitLabel}
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setError(null);
+          setMode(otherMode);
+        }}
+        className="t-small muted"
+        style={{ background: "none", border: 0, padding: 0, textAlign: "center", cursor: "pointer" }}
+        disabled={busy}
+      >
+        {mode === "sign-in" ? "Need an account? Sign up" : "Already have an account? Sign in"}
       </button>
     </form>
   );

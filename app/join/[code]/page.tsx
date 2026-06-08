@@ -50,7 +50,7 @@ export default async function JoinByCode({
             </div>
           )}
         </div>
-        <LoginForm />
+        <LoginForm redirectTo={`/onboarding?code=${encodeURIComponent(code)}`} />
         <Link href="/welcome" className="t-small muted" style={{ textAlign: "center", textDecoration: "none" }}>
           Just looking around →
         </Link>

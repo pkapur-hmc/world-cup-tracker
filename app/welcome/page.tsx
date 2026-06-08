@@ -27,9 +27,6 @@ export default async function WelcomePage() {
           <div className="t-small muted">Pour. Pick. Stamp. Track your bracket through the 2026 tournament.</div>
         </div>
         <LoginForm />
-        <div className="t-small muted" style={{ textAlign: "center" }}>
-          Magic-link sign in. No password.
-        </div>
       </div>
     </main>
   );
