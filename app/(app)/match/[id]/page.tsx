@@ -17,7 +17,7 @@ import { colorFor } from "@/data/country-colors";
 import { PourButton } from "./PourButton";
 import { BeerStampRail } from "./BeerStampRail";
 import { WatchingNow, type WatchingMember } from "./WatchingNow";
-import { PickAndStake } from "./PickAndStake";
+import { PreMatchInteractive } from "./PreMatchInteractive";
 import { WccIcon, WcpIcon } from "@/components/ui/CurrencyIcon";
 
 function flag(code: string | null) {
@@ -80,42 +80,59 @@ function MatchAppbar({ match }: { match: Match }) {
   );
 }
 
-function TeamChunk({ code }: { code: string | null }) {
+function TeamChunk({
+  code,
+  accentTeams = false,
+}: {
+  code: string | null;
+  accentTeams?: boolean;
+}) {
+  const c = accentTeams && code ? colorFor(code) : null;
   const inner = (
     <>
       <span className="flag xl">{flag(code)}</span>
       <span className="t-sub">{code ?? "TBD"}</span>
     </>
   );
+  const wrapStyle: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 6,
+    ...(c
+      ? {
+          background: c.tint,
+          borderBottom: `3px solid ${c.primary}`,
+          borderRadius: "var(--r-md)",
+          padding: "10px 18px",
+          color: c.ink,
+        }
+      : {}),
+  };
   if (!code) {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-        {inner}
-      </div>
-    );
+    return <div style={wrapStyle}>{inner}</div>;
   }
   return (
     <Link
       href={`/team/${code}`}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 6,
-        textDecoration: "none",
-        color: "inherit",
-      }}
+      style={{ ...wrapStyle, textDecoration: "none", color: c ? c.ink : "inherit" }}
     >
       {inner}
     </Link>
   );
 }
 
-function MatchHero({ match }: { match: Match }) {
+function MatchHero({
+  match,
+  accentTeams = false,
+}: {
+  match: Match;
+  accentTeams?: boolean;
+}) {
   return (
     <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18 }}>
-        <TeamChunk code={match.team_a_code} />
+        <TeamChunk code={match.team_a_code} accentTeams={accentTeams} />
         {match.status === "live" || match.status === "final" ? (
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
             <span className="t-display tnum">{match.score_a ?? 0}</span>
@@ -125,7 +142,7 @@ function MatchHero({ match }: { match: Match }) {
         ) : (
           <div className="t-display dim" style={{ fontSize: 36 }}>vs</div>
         )}
-        <TeamChunk code={match.team_b_code} />
+        <TeamChunk code={match.team_b_code} accentTeams={accentTeams} />
       </div>
       {match.status === "scheduled" ? (
         <>
@@ -406,6 +423,8 @@ async function LiveView({
     <>
       <MatchAppbar match={match} />
       <div className="screen" style={{ paddingBottom: 92, gap: 16 }}>
+        <MatchHero match={match} accentTeams />
+
         {/* Your pick row */}
         <div
           style={{
@@ -508,28 +527,19 @@ async function PreView({
     <>
       <MatchAppbar match={match} />
       <div className="screen" style={{ gap: 18 }}>
-        <MatchHero match={match} />
-
-        {match.team_a_code && match.team_b_code ? (
-          <PickAndStake
-            matchId={match.id}
-            isKnockout={isKnockout}
-            teamACode={match.team_a_code}
-            teamBCode={match.team_b_code}
-            flagA={flag(match.team_a_code)}
-            flagB={flag(match.team_b_code)}
-            availableWcc={stats.wcc}
-            initial={my?.pick ? { pick: my.pick, stake: my.stake } : null}
-            locksAt={match.kickoff_at}
-          />
-        ) : (
-          <div className="card empty-block" style={{ textAlign: "center" }}>
-            <div className="empty-lead">Not your turn yet.</div>
-            <div className="empty-sub">Knockout picks open after group stage wraps.</div>
-          </div>
-        )}
-
-        <GroupPicksList picks={picks} match={match} />
+        <PreMatchInteractive
+          matchId={match.id}
+          isKnockout={isKnockout}
+          teamACode={match.team_a_code}
+          teamBCode={match.team_b_code}
+          flagA={flag(match.team_a_code)}
+          flagB={flag(match.team_b_code)}
+          availableWcc={stats.wcc}
+          initial={my?.pick ? { pick: my.pick, stake: my.stake } : null}
+          locksAt={match.kickoff_at}
+          hero={<MatchHero match={match} />}
+          groupPicks={<GroupPicksList picks={picks} match={match} />}
+        />
         <div style={{ height: 16 }} />
       </div>
     </>

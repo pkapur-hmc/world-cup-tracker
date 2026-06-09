@@ -1158,6 +1158,26 @@ html, body {
   margin-top: 6px;
   font-variant-numeric: tabular-nums;
 }
+.match-card .mc-pick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 5px 10px;
+  border-radius: var(--r-sm);
+  font-family: var(--ff-ui);
+  font-weight: 700;
+  font-size: 13px;
+}
+.match-card .mc-pick .caps-label { color: var(--stout-55); }
+.match-card .mc-pick .flag { font-size: 16px; line-height: 1; }
+.match-card .mc-pick .mc-pick-team { letter-spacing: -0.01em; }
+.match-card .mc-pick .mc-pick-stake {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--burn);
+}
 
 /* ---------- Member row (watching now) ---------- */
 .member-row {

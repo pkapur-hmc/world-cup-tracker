@@ -21,6 +21,7 @@ export function PickAndStake({
   availableWcc,
   initial,
   locksAt,
+  onPickChange,
 }: {
   matchId: number;
   isKnockout: boolean;
@@ -31,6 +32,9 @@ export function PickAndStake({
   availableWcc: number;
   initial: ExistingPick;
   locksAt: string;
+  /** Fires whenever the selected side changes, so a parent can recolor the
+   *  page to the picked country immediately (before the pick is even locked). */
+  onPickChange?: (pick: "A" | "D" | "B") => void;
 }) {
   const [pick, setPick] = useState<"A" | "D" | "B" | null>(initial?.pick ?? null);
   const [stake, setStake] = useState<number>(initial?.stake ?? 0);
@@ -69,6 +73,12 @@ export function PickAndStake({
 
   const locked = minsToLock < 0;
 
+  function choose(value: "A" | "D" | "B") {
+    if (locked) return;
+    setPick(value);
+    onPickChange?.(value);
+  }
+
   function contrastInk(hex: string): string {
     // simple luma check - pick dark text on light bgs, light text on dark
     const h = hex.replace("#", "");
@@ -99,7 +109,7 @@ export function PickAndStake({
     return (
       <button
         type="button"
-        onClick={() => !locked && setPick(value)}
+        onClick={() => choose(value)}
         disabled={locked}
         className={`pick-btn ${selected ? "selected" : ""}`}
         style={{ ...baseStyle, ...selectedStyle }}

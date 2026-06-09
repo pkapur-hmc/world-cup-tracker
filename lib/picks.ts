@@ -64,6 +64,33 @@ export async function getPicksForUsersInMatch(
   });
 }
 
+/** Every pick the current user has made, keyed by match id. Used by the
+ *  schedule to show your picked country on each card (mirrors the home page).
+ *  Guarded so it returns an empty map before scripts/002 has been applied. */
+export async function getUserPicksByMatch(
+  userId: string,
+): Promise<Map<number, { pick: "A" | "D" | "B"; stake: number }>> {
+  const out = new Map<number, { pick: "A" | "D" | "B"; stake: number }>();
+  const supabase = await createClient();
+  try {
+    const { data, error } = await supabase
+      .from("wc_picks")
+      .select("match_id, pick, stake")
+      .eq("user_id", userId);
+    if (error) return out;
+    for (const r of (data ?? []) as {
+      match_id: number;
+      pick: "A" | "D" | "B";
+      stake: number;
+    }[]) {
+      out.set(r.match_id, { pick: r.pick, stake: r.stake });
+    }
+  } catch {
+    return out;
+  }
+  return out;
+}
+
 /** Drinks count per user for a single match. Filters by the supplied user
  *  set rather than by group_id - drinks are user-wide, so the "who counts"
  *  decision belongs to the caller. */

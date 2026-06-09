@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { getMatchesByDay, type Match } from "@/lib/fixtures";
+import { getCurrentMembership } from "@/lib/membership";
+import { getUserPicksByMatch } from "@/lib/picks";
 import { FLAG_EMOJI } from "@/data/flag-emojis";
+import { colorFor } from "@/data/country-colors";
+
+type MyPick = { pick: "A" | "D" | "B"; stake: number };
 
 const STAGES: { key: string; label: string }[] = [
   { key: "", label: "All" },
@@ -36,7 +41,46 @@ function dayLabel(dayIso: string): { emph: string | null; rest: string } {
   return { emph: weekday, rest: ` · ${monthDay}` };
 }
 
-function MatchCard({ match }: { match: Match }) {
+function PickChip({ match, myPick }: { match: Match; myPick: MyPick }) {
+  const pickedCode =
+    myPick.pick === "A"
+      ? match.team_a_code
+      : myPick.pick === "B"
+        ? match.team_b_code
+        : null;
+  const accent = colorFor(pickedCode);
+  const pickFlag =
+    myPick.pick === "A"
+      ? flag(match.team_a_code)
+      : myPick.pick === "B"
+        ? flag(match.team_b_code)
+        : "•";
+  const pickLabel =
+    myPick.pick === "A"
+      ? match.team_a_code ?? "A"
+      : myPick.pick === "B"
+        ? match.team_b_code ?? "B"
+        : "Draw";
+  return (
+    <div
+      className="mc-pick"
+      style={{
+        background: pickedCode ? accent.tint : "var(--paper)",
+        borderLeft: `3px solid ${pickedCode ? accent.primary : "var(--stout-35)"}`,
+        color: accent.ink,
+      }}
+    >
+      <span className="caps-label">Your pick</span>
+      <span className="flag">{pickFlag}</span>
+      <span className="mc-pick-team">{pickLabel}</span>
+      {myPick.stake > 0 ? (
+        <span className="mc-pick-stake tnum">+{myPick.stake} staked</span>
+      ) : null}
+    </div>
+  );
+}
+
+function MatchCard({ match, myPick }: { match: Match; myPick?: MyPick }) {
   const tA = match.team_a_code ?? "TBD";
   const tB = match.team_b_code ?? "TBD";
   const time = new Date(match.kickoff_at).toLocaleTimeString(undefined, {
@@ -96,6 +140,7 @@ function MatchCard({ match }: { match: Match }) {
           <span className="flag">{flag(match.team_b_code)}</span>
         </div>
         <div className="meta">{meta}</div>
+        {myPick ? <PickChip match={match} myPick={myPick} /> : null}
       </div>
       <svg className="chev" width="16" height="16" viewBox="0 0 24 24" fill="none">
         <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -112,9 +157,11 @@ export default async function SchedulePage({
   const params = await searchParams;
   const activeStage = STAGES.find((s) => s.key === params.stage)?.key ?? "";
 
-  const byDay = await getMatchesByDay(
-    activeStage ? (activeStage as Match["stage"]) : undefined,
-  );
+  const member = await getCurrentMembership();
+  const [byDay, picksByMatch] = await Promise.all([
+    getMatchesByDay(activeStage ? (activeStage as Match["stage"]) : undefined),
+    member ? getUserPicksByMatch(member.userId) : Promise.resolve(new Map<number, MyPick>()),
+  ]);
   const dayKeys = Array.from(byDay.keys()).sort();
 
   return (
@@ -160,7 +207,7 @@ export default async function SchedulePage({
               </div>
               {matches.map((m) => (
                 <div key={m.id} style={{ marginTop: 10 }}>
-                  <MatchCard match={m} />
+                  <MatchCard match={m} myPick={picksByMatch.get(m.id)} />
                 </div>
               ))}
             </div>

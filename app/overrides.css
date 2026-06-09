@@ -9,6 +9,28 @@
   min-height: calc(100vh - 76px);
 }
 
+/* Mobile tap reliability: tell the browser these targets never double-tap-zoom,
+   so it dispatches the click on the FIRST tap instead of waiting ~300ms to see
+   if a second tap is coming. That delay is what made selecting a pick / country
+   beer occasionally feel like it needed two taps. */
+button,
+a,
+.pick-btn,
+.country-beer-launcher,
+.pour-btn-circle,
+.beer-chip,
+.chip,
+.btn {
+  touch-action: manipulation;
+}
+
+/* On touch devices, don't let :hover styles stick after a tap (sticky hover
+   reinforces the "did my tap register?" confusion). */
+@media (hover: none) {
+  .pick-btn:hover,
+  .country-beer-launcher:hover { background: var(--bubble); }
+}
+
 /* ---------- Picks (04-match-detail.html) ---------- */
 .pick-row {
   display: grid;
