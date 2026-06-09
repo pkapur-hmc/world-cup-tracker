@@ -189,3 +189,21 @@ a,
   background: var(--pour);
   border-radius: 999px;
 }
+
+/* Loading skeletons (app/(app)/loading.tsx) */
+@keyframes skel-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.95; }
+}
+.skel {
+  background: var(--stout-12);
+  border-radius: var(--r-sm, 6px);
+  animation: skel-pulse 1.2s ease-in-out infinite;
+}
+.skel-title { width: 60%; height: 28px; margin-bottom: 8px; }
+.skel-sub   { width: 35%; height: 14px; }
+.skel-card  {
+  background: var(--stout-12);
+  border: none;
+  animation: skel-pulse 1.2s ease-in-out infinite;
+}
