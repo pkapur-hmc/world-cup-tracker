@@ -73,8 +73,21 @@ export function PourButton({
     });
   }
 
+  const isFirstEver = totalDrinks === 0;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {isFirstEver ? (
+        <div className="first-pour-hint">
+          <span aria-hidden style={{ fontSize: 18 }}>🍺</span>
+          <div>
+            <div className="t-sub" style={{ fontSize: 13 }}>Your first pour earns +1 WCC.</div>
+            <div className="t-small muted">
+              Try a country beer below for +2 WCC and a 🛂 passport stamp.
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div className="pour-stepper">
         <button
           type="button"

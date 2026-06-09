@@ -180,39 +180,73 @@ export function PickAndStake({
           </div>
         </div>
 
-        <div
-          className="card well"
-          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}
-        >
-          <div>
-            <div className="t-small muted">Staking</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
-              <span className="cur-tag"><WccIcon size={18} /><span className="t-h1 tnum">{stakeCapped}</span></span>
-              <span className="t-small muted">→</span>
-              <span className="cur-tag" style={{ color: "var(--pitch)" }}>
-                <WccIcon size={18} />
-                <span className="t-h2 tnum">+{payout}</span>
-              </span>
+        <div className="card well" style={{ marginTop: 10 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+            }}
+          >
+            <div>
+              <div className="t-small muted">Your stake</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                <span className="cur-tag">
+                  <WccIcon size={18} />
+                  <span className="t-h1 tnum">{stakeCapped}</span>
+                </span>
+              </div>
+            </div>
+            <div className="stepper">
+              <button
+                type="button"
+                onClick={() => setStake((s) => Math.max(0, s - 1))}
+                disabled={stake <= 0 || pending || locked}
+                aria-label="Decrease stake"
+              >
+                −
+              </button>
+              <span className="value tnum">{stakeCapped}</span>
+              <button
+                type="button"
+                onClick={() => setStake((s) => Math.min(budget, s + 1))}
+                disabled={stake >= budget || pending || locked}
+                aria-label="Increase stake"
+              >
+                +
+              </button>
             </div>
           </div>
-          <div className="stepper">
-            <button
-              type="button"
-              onClick={() => setStake((s) => Math.max(0, s - 1))}
-              disabled={stake <= 0 || pending || locked}
-              aria-label="Decrease stake"
-            >
-              −
-            </button>
-            <span className="value tnum">{stakeCapped}</span>
-            <button
-              type="button"
-              onClick={() => setStake((s) => Math.min(budget, s + 1))}
-              disabled={stake >= budget || pending || locked}
-              aria-label="Increase stake"
-            >
-              +
-            </button>
+
+          <div className="payout-preview">
+            <div className="pp-row pp-win">
+              <span className="pp-label">If right</span>
+              <span className="pp-value tnum">
+                +{payout} <WccIcon size={13} />
+              </span>
+              <span className="pp-formula">
+                {stakeCapped > 0 ? `1 + 2×${stakeCapped}` : "base"}
+              </span>
+            </div>
+            <div className={`pp-row pp-lose ${stakeCapped === 0 ? "is-dim" : ""}`}>
+              <span className="pp-label">If wrong</span>
+              <span className="pp-value tnum">
+                {stakeCapped > 0 ? <>−{stakeCapped} <WccIcon size={13} /></> : "0"}
+              </span>
+              <span className="pp-formula">
+                {stakeCapped > 0 ? "stake lost" : "no risk"}
+              </span>
+            </div>
+            {stakeCapped > 0 ? (
+              <div className="pp-row pp-skip">
+                <span className="pp-label">Or skip stake</span>
+                <span className="pp-value tnum">
+                  +1 <WccIcon size={13} />
+                </span>
+                <span className="pp-formula">no risk</span>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

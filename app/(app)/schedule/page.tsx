@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getMatchesByDay, type Match } from "@/lib/fixtures";
+import { getMatchesByDay, venueCity, type Match } from "@/lib/fixtures";
 import { getCurrentMembership } from "@/lib/membership";
 import { getUserPicksByMatch } from "@/lib/picks";
 import { FLAG_EMOJI } from "@/data/flag-emojis";
@@ -78,6 +78,7 @@ function MatchCard({ match, myPick }: { match: Match; myPick?: MyPick }) {
       : match.stage.toUpperCase();
 
   const showScore = match.status === "live" || match.status === "final";
+  const city = venueCity(match.venue);
 
   // A bet tints the whole card the picked country's color (exactly like the
   // home page's "next up" card). Draw picks have no country, so no tint.
@@ -119,7 +120,10 @@ function MatchCard({ match, myPick }: { match: Match; myPick?: MyPick }) {
           <span>{tB}</span>
           <span className="flag">{flag(match.team_b_code)}</span>
         </div>
-        <div className="meta">{meta}</div>
+        <div className="meta">
+          {meta}
+          {city ? <> · {city}</> : null}
+        </div>
         {myPick ? (
           <PickPanel
             teamACode={match.team_a_code}

@@ -143,9 +143,34 @@ html, body {
 .status-bar .sb-right { display: flex; gap: 6px; align-items: center; }
 .status-bar svg { display: block; }
 
-/* top app bar */
+/* global brand header (rendered once in layout, above every appbar) */
+.top-bar {
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--foam);
+}
+.top-bar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+}
+.top-bar-brand .top-bar-wordmark {
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--stout);
+}
+
+/* page header (per-screen title) */
 .appbar {
-  padding: 6px 20px 14px;
+  padding: 4px 20px 14px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -256,6 +281,275 @@ html, body {
 .card .card-head {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 10px;
+}
+
+/* ---------- Hero Action (home page lead card) ---------- */
+.hero-action {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--bubble);
+  border: 1px solid var(--stout-12);
+  border-radius: var(--r-md);
+  padding: 14px 16px 0;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.7) inset, 0 1px 2px rgba(40,22,4,0.04);
+}
+.hero-action.live {
+  background:
+    linear-gradient(180deg, rgba(229, 156, 32, 0.10), transparent 70%),
+    var(--bubble);
+}
+.hero-tag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.hero-tag .hero-tag-meta {
+  font-family: var(--ff-ui);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--stout-55);
+  font-weight: 700;
+}
+.hero-tag .caps-label.urgent {
+  color: var(--burn);
+}
+.hero-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 6px 0 10px;
+  font-family: var(--ff-display);
+}
+.hero-score .t-display {
+  font-size: 36px;
+  font-weight: 800;
+}
+.hero-matchup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 4px 0 6px;
+}
+.hero-meta-row {
+  font-size: 12px;
+  color: var(--stout-55);
+  text-align: center;
+  margin-bottom: 6px;
+}
+.hero-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px -16px 0;
+  padding: 14px 16px;
+  border-top: 1px solid var(--stout-08, rgba(40,22,4,0.06));
+  background: var(--paper);
+  border-bottom-left-radius: var(--r-md);
+  border-bottom-right-radius: var(--r-md);
+}
+.hero-cta-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+.hero-cta-lead {
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--stout);
+}
+.hero-cta-sub {
+  font-size: 12px;
+  color: var(--stout-55);
+  margin-top: 1px;
+}
+.hero-cta > div { flex: 1; min-width: 0; }
+.hero-cta-chev {
+  font-family: var(--ff-display);
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--stout-55);
+}
+
+/* "Then" sliver under a live Hero when another match is queued */
+.next-up-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  background: transparent;
+  border: 1px dashed var(--stout-12);
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  margin-top: -4px;
+}
+.next-up-row .next-up-teams {
+  flex: 1;
+  font-family: var(--ff-ui);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--stout);
+}
+.next-up-row .next-up-time {
+  font-size: 12px;
+  color: var(--stout-55);
+}
+
+/* Onboarding checklist (home page, only while not all 3 done) */
+.onboarding-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  background: var(--bubble);
+  border: 1px solid var(--stout-12);
+  border-radius: var(--r-md);
+}
+.ck-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  text-decoration: none;
+  color: inherit;
+}
+.ck-row.ck-link { cursor: pointer; }
+.ck-box {
+  width: 20px; height: 20px;
+  flex: 0 0 20px;
+  border-radius: 6px;
+  border: 1.5px solid var(--stout-35, rgba(40,22,4,0.35));
+  background: var(--foam);
+  display: grid;
+  place-items: center;
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 13px;
+  color: transparent;
+}
+.ck-box.ck-done {
+  background: var(--pitch);
+  border-color: var(--pitch);
+  color: var(--foam);
+}
+.ck-label {
+  flex: 1;
+  font-family: var(--ff-ui);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--stout);
+}
+.ck-label-done {
+  color: var(--stout-55);
+  text-decoration: line-through;
+}
+.ck-chev {
+  font-family: var(--ff-display);
+  font-size: 18px;
+  color: var(--stout-55);
+}
+
+/* First-pour explainer (PourButton, only on totalDrinks===0) */
+.first-pour-hint {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--paper);
+  border: 1px dashed var(--stout-12);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  margin-bottom: 4px;
+}
+
+/* Payout preview inside the stake card */
+.payout-preview {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--stout-08, rgba(40,22,4,0.08));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pp-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: baseline;
+  gap: 10px;
+}
+.pp-row .pp-label {
+  font-family: var(--ff-ui);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--stout-55);
+}
+.pp-row .pp-value {
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 18px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.pp-row .pp-formula {
+  font-size: 11px;
+  color: var(--stout-55);
+  font-family: var(--ff-ui);
+}
+.pp-row.pp-win .pp-value { color: var(--pitch); }
+.pp-row.pp-lose .pp-value { color: var(--penalty); }
+.pp-row.pp-skip .pp-value { color: var(--stout-55); }
+.pp-row.is-dim { opacity: 0.55; }
+
+/* Three-Verbs strip — permanent orientation legend, NOT a button row */
+.three-verbs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin-top: 4px;
+  padding: 6px 4px 2px;
+}
+.three-verbs .verb {
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  text-align: center;
+  position: relative;
+}
+.three-verbs .verb + .verb::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 18%;
+  bottom: 18%;
+  width: 1px;
+  background: var(--stout-08, rgba(40,22,4,0.08));
+}
+.three-verbs .verb-icon {
+  font-size: 18px;
+  display: block;
+  line-height: 1;
+  opacity: 0.85;
+}
+.three-verbs .verb-name {
+  font-family: var(--ff-ui);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  margin-top: 4px;
+  color: var(--stout-55);
+}
+.three-verbs .verb-reward {
+  font-size: 11px;
+  color: var(--stout-55);
+  margin-top: 0;
+  opacity: 0.75;
 }
 
 /* ---------- Buttons ---------- */

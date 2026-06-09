@@ -11,6 +11,17 @@ export type GroupPick = {
   payout_wcp: number;
 };
 
+/** Has the user ever made a pick? Used by the home-page onboarding row. */
+export async function hasUserEverPicked(userId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("wc_picks")
+    .select("user_id")
+    .eq("user_id", userId)
+    .limit(1);
+  return (data?.length ?? 0) > 0;
+}
+
 /**
  * Picks for a set of users + a match. Returns one row per input member with
  * their (single, user-level) pick or null. Used by the match-page group-picks

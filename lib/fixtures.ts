@@ -21,6 +21,18 @@ export type Match = {
 const SELECT =
   "id,stage,group_letter,team_a_code,team_b_code,kickoff_at,venue,status,score_a,score_b,winner_code";
 
+/** Venue is stored as "Stadium, City". These pull the two halves out. */
+export function venueCity(venue: string | null): string | null {
+  if (!venue) return null;
+  const i = venue.indexOf(", ");
+  return i === -1 ? venue : venue.slice(i + 2);
+}
+export function venueStadium(venue: string | null): string | null {
+  if (!venue) return null;
+  const i = venue.indexOf(", ");
+  return i === -1 ? venue : venue.slice(0, i);
+}
+
 export async function getLiveMatches(): Promise<Match[]> {
   const supabase = await createClient();
   const { data, error } = await supabase

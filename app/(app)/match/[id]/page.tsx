@@ -183,15 +183,16 @@ function MatchHero({
           <div className="t-sub" style={{ marginTop: 6 }}>
             <LocalTime iso={match.kickoff_at} mode="dayLong" /> · <LocalTime iso={match.kickoff_at} mode="time" />
           </div>
-          {match.venue ? (
-            <div className="t-small muted" style={{ marginTop: 2 }}>
-              {match.venue}
-            </div>
-          ) : null}
         </>
       ) : match.status === "final" ? (
-        <div className="t-small muted" style={{ marginTop: 14 }}>
-          Final{match.venue ? ` · ${match.venue}` : ""}
+        <div className="t-small muted" style={{ marginTop: 14 }}>Final</div>
+      ) : null}
+      {match.venue ? (
+        <div
+          className="t-small muted"
+          style={{ marginTop: match.status === "scheduled" ? 2 : 6 }}
+        >
+          {match.venue}
         </div>
       ) : null}
     </div>
@@ -243,7 +244,7 @@ function GroupPicksList({
                   <span className="flag">{pickLabel(p.pick).flag}</span> {pickLabel(p.pick).label}
                 </span>
               ) : (
-                <span className="gp-pick">Pending</span>
+                <span className="gp-pick dim">No bet</span>
               )}
               <span className={`gp-stake tnum ${p.pick ? "" : "dim"}`}>
                 {p.pick

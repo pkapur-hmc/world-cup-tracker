@@ -101,8 +101,8 @@ export function BeerStampRail({
             <div className="cbl-title">{countryName} beers</div>
             <div className="cbl-sub">
               {totalThisMatch > 0
-                ? `${totalThisMatch} logged this match`
-                : "Tap to log a specific beer"}
+                ? `${totalThisMatch} logged · +${totalThisMatch * 2} WCC 🛂`
+                : "+2 WCC + 🛂 stamp each"}
             </div>
           </div>
         </div>

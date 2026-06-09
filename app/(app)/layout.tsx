@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TabBar } from "@/components/ui/TabBar";
+import { TopBar } from "@/components/ui/TopBar";
 
 export default async function AppLayout({
   children,
@@ -22,6 +23,7 @@ export default async function AppLayout({
   return (
     <div className="app-shell">
       <div className="app-frame">
+        <TopBar />
         {children}
         <TabBar />
       </div>
