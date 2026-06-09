@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { getCurrentMembership } from "@/lib/membership";
 import { createClient } from "@/lib/supabase/server";
@@ -150,6 +151,8 @@ export default async function PassportPage() {
             />
           </div>
         </div>
+        {/* Embossed cover seal - the one place in-app the full crest appears. */}
+        <Image src="/crest.svg" alt="" width={64} height={64} style={{ opacity: 0.9, marginTop: 4 }} />
       </div>
 
       <div className="screen" style={{ gap: 14 }}>

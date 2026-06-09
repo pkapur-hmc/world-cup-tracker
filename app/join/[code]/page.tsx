@@ -38,7 +38,7 @@ export default async function JoinByCode({
     >
       <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", gap: 24 }}>
         <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-          <Image src="/mark.svg" alt="" width={56} height={56} priority />
+          <Image src="/crest.svg" alt="World Cup Cup" width={110} height={110} priority />
           <div className="t-h1">You&apos;re invited</div>
           {groupName ? (
             <div className="t-small muted">

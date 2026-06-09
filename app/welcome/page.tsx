@@ -22,8 +22,7 @@ export default async function WelcomePage() {
     >
       <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", gap: 24 }}>
         <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-          <Image src="/mark.svg" alt="" width={72} height={72} priority />
-          <div className="t-display" style={{ fontSize: 36 }}>The World Cup Cup</div>
+          <Image src="/crest.svg" alt="World Cup Cup" width={220} height={220} priority />
           <div className="t-small muted">Pour. Pick. Stamp. Track your bracket through the 2026 tournament.</div>
         </div>
         <LoginForm />

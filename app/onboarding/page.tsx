@@ -35,7 +35,7 @@ export default async function OnboardingPage() {
     >
       <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", gap: 20 }}>
         <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-          <Image src="/mark.svg" alt="" width={48} height={48} priority />
+          <Image src="/stein.svg" alt="" width={44} height={64} priority />
           <div className="t-h1">One more thing</div>
           <div className="t-small muted">Create a bracket or join one with an invite code.</div>
         </div>
