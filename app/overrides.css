@@ -190,42 +190,28 @@ a,
   border-radius: 999px;
 }
 
-/* Loading skeletons (app/(app)/loading.tsx) */
-@keyframes skel-pulse {
-  0%, 100% { opacity: 0.55; }
-  50%      { opacity: 0.95; }
-}
-.skel {
-  background: var(--stout-12);
-  border-radius: var(--r-sm, 6px);
-  animation: skel-pulse 1.2s ease-in-out infinite;
-}
-.skel-title { width: 60%; height: 28px; margin-bottom: 8px; }
-.skel-sub   { width: 35%; height: 14px; }
-.skel-card  {
-  background: var(--stout-12);
-  border: none;
-  animation: skel-pulse 1.2s ease-in-out infinite;
-}
-
-/* loading.tsx pour animation */
+/* loading.tsx pour animation.
+   Cycle: pour fills the glass bottom-up (0-65%), tops out briefly (65-75%),
+   drains fast (75-85%), then waits empty before the next pour (85-100%).
+   Total period 1.2s (2x the original pace). */
 @keyframes ld-fill {
-  0%   { transform: translateY(80px); }
-  85%  { transform: translateY(0); }
-  100% { transform: translateY(0); }
+  0%        { transform: translateY(222px); }     /* empty: rect pushed below the glass */
+  65%       { transform: translateY(0); }         /* full at the rim */
+  75%       { transform: translateY(0); }         /* hold full */
+  85%, 100% { transform: translateY(222px); }     /* drained, holds empty until loop restarts */
 }
 @keyframes ld-pour {
-  0%        { opacity: 0; transform: translateY(-8px); }
-  10%, 80%  { opacity: 1; transform: translateY(0); }
-  90%, 100% { opacity: 0; transform: translateY(4px); }
+  0%        { opacity: 0; }                       /* matches drain-hold from prior cycle */
+  5%, 65%   { opacity: 1; }                       /* pour while the glass is filling */
+  70%, 100% { opacity: 0; }                       /* stream off once the glass is full */
 }
 @keyframes ld-trophy {
   0%, 100% { transform: rotate(-1.5deg) translateY(0); }
   50%      { transform: rotate( 1.5deg) translateY(-2px); }
 }
-.ld-fill   { animation: ld-fill 2.4s ease-in-out infinite; }
-.ld-pour   { animation: ld-pour 2.4s ease-in-out infinite; transform-origin: 180px 30px; }
-.ld-trophy { animation: ld-trophy 3.6s ease-in-out infinite; transform-origin: 62px 144px; }
+.ld-fill   { animation: ld-fill 1.2s ease-in-out infinite; }
+.ld-pour   { animation: ld-pour 1.2s linear infinite; }
+.ld-trophy { animation: ld-trophy 3.6s ease-in-out infinite; transform-origin: 256px 256px; }
 @media (prefers-reduced-motion: reduce) {
   .ld-fill, .ld-pour, .ld-trophy { animation: none; }
   .ld-fill { transform: translateY(0); }
