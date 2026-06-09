@@ -147,10 +147,14 @@ function MugSvg() {
           strokeLinejoin="round"
         />
 
-        {/* Pour stream above the rim */}
+        {/* Pour stream above the rim - a thick gushy column with a slight
+            foam head at the top and an impact splash at the rim. */}
         <g className="ld-pour">
-          <rect x="218" y="30" width="6" height="80" fill="url(#ld-amber-v)" />
-          <circle cx="221" cy="108" r="5" fill="#E59C20" />
+          <rect x="208" y="28" width="24" height="84" fill="url(#ld-amber-v)" rx="3" />
+          {/* foam crest at the spout */}
+          <ellipse cx="220" cy="30" rx="13" ry="4" fill="#FFFEF2" />
+          {/* impact splash at the rim */}
+          <ellipse cx="220" cy="112" rx="18" ry="6" fill="#E59C20" />
         </g>
 
         {/* Beer fill (clipped to glass). Translated up by the animation. */}
