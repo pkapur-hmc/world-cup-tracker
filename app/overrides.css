@@ -190,29 +190,18 @@ a,
   border-radius: 999px;
 }
 
-/* loading.tsx pour animation.
-   Cycle: pour fills the glass bottom-up (0-65%), tops out briefly (65-75%),
-   drains fast (75-85%), then waits empty before the next pour (85-100%).
-   Total period 1.2s (2x the original pace). */
+/* loading.tsx trophy-fill animation.
+   Cycle: amber rises inside the trophy silhouette (0-65%), tops out briefly
+   (65-75%), drains fast (75-85%), then sits empty before the next pour
+   (85-100%). Translate distance = trophy viewBox height (~510) so the rect
+   parks fully below the silhouette in the empty state. Period 1.2s. */
 @keyframes ld-fill {
-  0%        { transform: translateY(222px); }     /* empty: rect pushed below the glass */
-  65%       { transform: translateY(0); }         /* full at the rim */
-  75%       { transform: translateY(0); }         /* hold full */
-  85%, 100% { transform: translateY(222px); }     /* drained, holds empty until loop restarts */
+  0%        { transform: translateY(510px); }
+  65%       { transform: translateY(0); }
+  75%       { transform: translateY(0); }
+  85%, 100% { transform: translateY(510px); }
 }
-@keyframes ld-pour {
-  0%        { opacity: 0; }                       /* matches drain-hold from prior cycle */
-  5%, 65%   { opacity: 1; }                       /* pour while the glass is filling */
-  70%, 100% { opacity: 0; }                       /* stream off once the glass is full */
-}
-@keyframes ld-trophy {
-  0%, 100% { transform: rotate(-1.5deg) translateY(0); }
-  50%      { transform: rotate( 1.5deg) translateY(-2px); }
-}
-.ld-fill   { animation: ld-fill 1.2s ease-in-out infinite; }
-.ld-pour   { animation: ld-pour 1.2s linear infinite; }
-.ld-trophy { animation: ld-trophy 3.6s ease-in-out infinite; transform-origin: 256px 256px; }
+.ld-fill { animation: ld-fill 1.2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .ld-fill, .ld-pour, .ld-trophy { animation: none; }
-  .ld-fill { transform: translateY(0); }
+  .ld-fill { animation: none; transform: translateY(0); }
 }
