@@ -27,7 +27,7 @@ export function HelpCard() {
         <div>
           <div className="t-sub" style={{ fontSize: 15 }}>How the Cup works</div>
           <div className="t-small muted">
-            WCC, WCP, picks, stakes, stamps - the whole loop.
+            WCC, picks, stakes, stamps - the whole loop.
           </div>
         </div>
         <span className="dim" style={{ fontFamily: "var(--ff-display)", fontWeight: 600, fontSize: 22 }}>›</span>

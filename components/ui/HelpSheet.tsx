@@ -1,7 +1,7 @@
 "use client";
 
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import { WccIcon, WcpIcon } from "@/components/ui/CurrencyIcon";
+import { WccIcon } from "@/components/ui/CurrencyIcon";
 
 /**
  * "How to play" sheet. One canonical explanation of the game so we can link
@@ -19,7 +19,8 @@ export function HelpSheet({ open, onClose }: { open: boolean; onClose: () => voi
         }
       >
         <p>
-          Your <strong>drinking currency</strong>. Earn it by logging drinks during matches.
+          The <strong>one currency</strong>. It&apos;s your balance, your score, and what
+          ranks the leaderboard. Earn it by logging drinks during matches.
         </p>
         <ul>
           <li>
@@ -30,39 +31,26 @@ export function HelpSheet({ open, onClose }: { open: boolean; onClose: () => voi
             and a passport stamp 🛂
           </li>
         </ul>
-        <p className="muted">Spend WCC to stake on your picks - or just sit on the pile.</p>
+        <p className="muted">Sit on your pile, or stake it on picks to win more.</p>
       </Section>
 
-      <Section
-        title={
-          <>
-            <WcpIcon size={16} /> WCP <span className="muted t-small">- World Cup Points</span>
-          </>
-        }
-      >
+      <Section title={<>🎯 Picks &amp; stakes</>}>
         <p>
-          Your <strong>scoreboard currency</strong>. The leaderboard is built on these.
+          Predict a match winner. <strong>Stake</strong> some of your WCC to win more.
         </p>
         <ul>
           <li>
-            Pick the winner of a match: <strong>+1 WCP</strong>
+            Pick the winner with no stake: <strong>+1 WCC</strong> if right
           </li>
           <li>
-            Pick correctly with a stake of <em>X</em>: <strong>+{`1 + 2×X`}</strong> WCP (your X
-            WCC stake is consumed)
+            Pick correctly with a stake of <em>X</em>: <strong>+{`1 + 2×X`}</strong> WCC (your
+            X-cup stake is spent either way)
           </li>
           <li>
-            Logging a country beer also nets <strong>+1 WCP</strong>
+            Wrong pick: you just lose the stake. No pick = nothing won or lost.
           </li>
         </ul>
-        <p className="muted">No pick on a match = no WCP from that match.</p>
-      </Section>
-
-      <Section title={<>📊 Total &amp; rank</>}>
-        <p>
-          Your <strong>Total = WCC + WCP</strong>. The leaderboard sorts on Total by default;
-          tap a chip to sort by any column.
-        </p>
+        <p className="muted">You can stake any WCC you have, including winnings.</p>
       </Section>
 
       <Section title={<>🏆 Multiple brackets</>}>

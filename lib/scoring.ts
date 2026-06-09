@@ -1,15 +1,19 @@
 /**
- * Pure scoring functions for The World Cup Cup.
- * All numbers derived from raw rows - no aggregate columns to keep in sync.
+ * Pure scoring for The World Cup Cup.
+ * One currency: WCC (World Cup Cups). All numbers derived from raw rows -
+ * no aggregate columns to keep in sync.
  *
  *   WCC = basic drinks (1 each) + country beers (2 each)
  *         - sum(stakes) + sum(payout_wcc from refunds)
- *   WCP = sum(payout_wcp on settled picks) + count(country-beer drinks)
- *   total = WCC + WCP
+ *         + sum(payout_wcp from won picks)
  *   stamps = distinct country_codes ever drunk (lifetime, not per-group)
  *
  * Country-beer multiplier: tracking a country-specific beer is harder and more
  * intentional than just tapping +1, so it's worth twice as much WCC.
+ *
+ * Picks: stake WCC on a side; a correct pick pays 1 + 2*stake WCC (the stake
+ * itself is spent). The winnings live in the `payout_wcp` column - the name
+ * predates the single-currency merge, but the value is plain WCC.
  */
 
 export const COUNTRY_BEER_WCC = 2;
@@ -19,26 +23,18 @@ export type DrinkRow = {
   country_code: string | null;
 };
 
-export type MatchLite = {
-  id: number;
-  team_a_code: string | null;
-  team_b_code: string | null;
-};
-
 export type PickRow = {
   match_id: number;
   pick: "A" | "D" | "B";
   stake: number;
   settled_at: string | null;
-  payout_wcc: number;
-  payout_wcp: number;
+  payout_wcc: number; // refund on a postponed match
+  payout_wcp: number; // winnings on a correct pick (denominated in WCC)
 };
 
 export type MemberStats = {
   drinks: number;
   wcc: number;
-  wcp: number;
-  total: number;
   stamps: number;
 };
 
@@ -46,36 +42,18 @@ export function drinksCount(drinks: DrinkRow[]): number {
   return drinks.length;
 }
 
-export function wccBalance(drinks: DrinkRow[], picks: PickRow[]): number {
+/** The single WCC number: earned from drinks, minus stakes spent, plus refunds
+ *  and pick winnings. Doubles as the spendable balance and the leaderboard
+ *  score. */
+export function wccTotal(drinks: DrinkRow[], picks: PickRow[]): number {
   const earned = drinks.reduce(
     (s, d) => s + (d.country_code ? COUNTRY_BEER_WCC : 1),
     0,
   );
   const stakesSpent = picks.reduce((s, p) => s + p.stake, 0);
   const refunds = picks.reduce((s, p) => s + p.payout_wcc, 0);
-  return earned - stakesSpent + refunds;
-}
-
-export function wcpTotal(
-  drinks: DrinkRow[],
-  picks: PickRow[],
-  matchesById: Map<number, MatchLite>,
-): number {
-  const fromPicks = picks.reduce((s, p) => s + p.payout_wcp, 0);
-  const fromBeers = drinks.reduce((s, d) => {
-    if (!d.country_code || !d.match_id) return s;
-    const m = matchesById.get(d.match_id);
-    if (!m) return s;
-    if (d.country_code === m.team_a_code || d.country_code === m.team_b_code) {
-      return s + 1;
-    }
-    return s;
-  }, 0);
-  return fromPicks + fromBeers;
-}
-
-export function headlineTotal(wcc: number, wcp: number): number {
-  return wcc + wcp;
+  const winnings = picks.reduce((s, p) => s + p.payout_wcp, 0);
+  return earned - stakesSpent + refunds + winnings;
 }
 
 export function stampSet(drinks: DrinkRow[]): Set<string> {
@@ -87,15 +65,10 @@ export function stampSet(drinks: DrinkRow[]): Set<string> {
 export function computeMemberStats(
   drinks: DrinkRow[],
   picks: PickRow[],
-  matchesById: Map<number, MatchLite>,
 ): MemberStats {
-  const wcc = wccBalance(drinks, picks);
-  const wcp = wcpTotal(drinks, picks, matchesById);
   return {
     drinks: drinksCount(drinks),
-    wcc,
-    wcp,
-    total: headlineTotal(wcc, wcp),
+    wcc: wccTotal(drinks, picks),
     stamps: stampSet(drinks).size,
   };
 }
@@ -175,19 +148,4 @@ export function pickOutcome(
     (pick.pick === "B" && match.winner_code === match.team_b_code) ||
     (pick.pick === "D" && match.winner_code === null);
   return correct ? "correct" : "wrong";
-}
-
-export function payoutBreakdown(pick: PickRow, outcome: PickOutcome): string {
-  if (outcome === "refunded")
-    return `refunded - -${pick.stake} +${pick.stake} WCC`;
-  if (outcome === "pending") return "pending";
-  if (outcome === "correct") {
-    const base = 1;
-    const bonus = 2 * pick.stake;
-    const stakeLine = pick.stake > 0 ? `, -${pick.stake} WCC` : "";
-    return `+${base + bonus} WCP${stakeLine}  (${base} base${
-      pick.stake > 0 ? ` + ${bonus} stake` : ""
-    })`;
-  }
-  return pick.stake > 0 ? `-${pick.stake} WCC` : "no payout";
 }

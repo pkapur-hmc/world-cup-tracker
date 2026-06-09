@@ -3,13 +3,12 @@
  * Wraps lib/scoring with the actual Supabase queries.
  *
  * Picks queries are guarded so this works before scripts/002 has been applied
- * (wc_picks may not yet exist). Pre-migration => zero WCP, no stake spending.
+ * (wc_picks may not yet exist). Pre-migration => no pick winnings or stakes.
  */
 import { createClient } from "@/lib/supabase/server";
 import {
   computeMemberStats,
   type DrinkRow,
-  type MatchLite,
   type MemberStats,
   type PickRow,
 } from "@/lib/scoring";
@@ -64,27 +63,15 @@ async function fetchDrinks(
   return (data ?? []) as DrinkRow[];
 }
 
-async function fetchMatchesLite(): Promise<Map<number, MatchLite>> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("wc_matches")
-    .select("id,team_a_code,team_b_code");
-  if (error) throw error;
-  const m = new Map<number, MatchLite>();
-  for (const row of (data ?? []) as MatchLite[]) m.set(row.id, row);
-  return m;
-}
-
 export async function getMemberStats(
   groupId: string,
   userId: string,
 ): Promise<MemberStats> {
-  const [drinks, picks, matchesById] = await Promise.all([
+  const [drinks, picks] = await Promise.all([
     fetchDrinks(groupId, userId),
     fetchPicks(groupId, userId),
-    fetchMatchesLite(),
   ]);
-  return computeMemberStats(drinks, picks, matchesById);
+  return computeMemberStats(drinks, picks);
 }
 
 /** Rank a member among their group by total. Returns 1-indexed rank + total members. */
@@ -99,15 +86,14 @@ export async function getRankInGroup(
     .eq("group_id", groupId);
   if (!members) return { rank: 1, total: 1 };
 
-  const matchesById = await fetchMatchesLite();
   const scored: { userId: string; name: string; total: number }[] = [];
   for (const m of members) {
     const [drinks, picks] = await Promise.all([
       fetchDrinks(groupId, m.user_id),
       fetchPicks(groupId, m.user_id),
     ]);
-    const s = computeMemberStats(drinks, picks, matchesById);
-    scored.push({ userId: m.user_id, name: m.display_name, total: s.total });
+    const s = computeMemberStats(drinks, picks);
+    scored.push({ userId: m.user_id, name: m.display_name, total: s.wcc });
   }
   scored.sort((a, b) => b.total - a.total);
   const idx = scored.findIndex((s) => s.userId === userId);

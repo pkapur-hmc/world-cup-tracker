@@ -7,7 +7,7 @@ import { getMemberStats } from "@/lib/stats";
 import { getPicksForUsersInMatch } from "@/lib/picks";
 import { FLAG_EMOJI } from "@/data/flag-emojis";
 import { colorFor } from "@/data/country-colors";
-import { WccIcon, WcpIcon } from "@/components/ui/CurrencyIcon";
+import { WccIcon } from "@/components/ui/CurrencyIcon";
 import { InfoChip } from "@/components/ui/InfoChip";
 import { PickPanel } from "@/components/ui/PickPanel";
 import { HomeInviteCard } from "./HomeInviteCard";
@@ -274,34 +274,19 @@ export default async function HomePage() {
         </div>
 
         <div className="card elevated">
-          <div className="stat-grid">
+          <div className="stat-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
             <div className="stat-cell">
               <div className="stat-num">{stats.drinks}</div>
               <div className="stat-label">Drinks</div>
             </div>
             <div className="stat-cell">
-              <div className="stat-num">{stats.wcc}</div>
+              <div className="stat-num" style={{ color: "var(--burn)" }}>{stats.wcc}</div>
               <div className="stat-label" style={{ display: "inline-flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
                 <WccIcon size={12} /> WCC
                 <InfoChip label="What is WCC?">
-                  <strong>World Cup Cups.</strong> +1 per basic drink, +2 per country beer. Spend on stakes.
+                  <strong>World Cup Cups.</strong> +1 per basic drink, +2 per country beer. Win more from correct picks (1 + 2× stake). Drives the leaderboard.
                 </InfoChip>
               </div>
-            </div>
-            <div className="stat-cell">
-              <div className="stat-num">{stats.wcp}</div>
-              <div className="stat-label" style={{ display: "inline-flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
-                <WcpIcon size={12} /> WCP
-                <InfoChip label="What is WCP?">
-                  <strong>World Cup Points.</strong> Earned from correct picks (1 + 2× stake) and from country beers (+1 each). Drives the leaderboard.
-                </InfoChip>
-              </div>
-            </div>
-            <div className="stat-cell">
-              <div className="stat-num" style={{ color: "var(--burn)" }}>
-                {stats.total}
-              </div>
-              <div className="stat-label">Total</div>
             </div>
           </div>
           <div

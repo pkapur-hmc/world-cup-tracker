@@ -7,7 +7,7 @@ import { FLAG_EMOJI } from "@/data/flag-emojis";
 import { COUNTRY_BEERS, type CountryBeer } from "@/data/country-beers";
 import { colorFor } from "@/data/country-colors";
 import { BackButton } from "@/components/ui/BackButton";
-import { WccIcon, WcpIcon } from "@/components/ui/CurrencyIcon";
+import { WccIcon } from "@/components/ui/CurrencyIcon";
 import { CountryBottle } from "@/components/ui/CountryBottle";
 import { InfoChip } from "@/components/ui/InfoChip";
 
@@ -400,9 +400,9 @@ export default async function TeamPage({
                 accent={accent.primary}
               />
               <YourStat
-                icon={<WcpIcon size={14} />}
+                icon={<WccIcon size={14} />}
                 num={myStats.wcpEarned}
-                label="WCP earned"
+                label="WCC won"
                 accent={accent.primary}
               />
               <YourStat
@@ -626,7 +626,7 @@ export default async function TeamPage({
                               color: "var(--foam-lit)",
                             }}
                           >
-                            {pickCorrect ? `+${my!.payout_wcp} WCP` : my!.stake > 0 ? `−${my!.stake} WCC` : "0 WCP"}
+                            {pickCorrect ? `+${my!.payout_wcp} WCC` : my!.stake > 0 ? `−${my!.stake} WCC` : "0 WCC"}
                           </span>
                         ) : null}
                         {beers > 0 ? (

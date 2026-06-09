@@ -46,49 +46,11 @@ export function WccIcon({ size = 16, className, style, title = "WCC" }: Props) {
   );
 }
 
-/** WCP = soccer ball. The points / scoring currency. */
-export function WcpIcon({ size = 16, className, style, title = "WCP" }: Props) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      className={`cur-icon wcp ${className ?? ""}`}
-      style={style}
-      role="img"
-      aria-label={title}
-    >
-      <title>{title}</title>
-      <circle cx="12" cy="12" r="9.5" fill="#fff" stroke="currentColor" strokeWidth="1.6" />
-      {/* center pentagon */}
-      <polygon
-        points="12,8 15,10.2 13.9,13.7 10.1,13.7 9,10.2"
-        fill="currentColor"
-      />
-      {/* spokes to surrounding panels */}
-      <line x1="12" y1="8" x2="12" y2="3" stroke="currentColor" strokeWidth="1.3" />
-      <line x1="15" y1="10.2" x2="19.5" y2="8.5" stroke="currentColor" strokeWidth="1.3" />
-      <line x1="13.9" y1="13.7" x2="17" y2="18.5" stroke="currentColor" strokeWidth="1.3" />
-      <line x1="10.1" y1="13.7" x2="7" y2="18.5" stroke="currentColor" strokeWidth="1.3" />
-      <line x1="9" y1="10.2" x2="4.5" y2="8.5" stroke="currentColor" strokeWidth="1.3" />
-    </svg>
-  );
-}
-
 /** Inline number + currency icon pair, e.g. "12 🍺 WCC". */
 export function WccTag({ value, size = 14 }: { value: number | string; size?: number }) {
   return (
     <span className="cur-tag">
       <WccIcon size={size} />
-      <span className="tnum">{value}</span>
-    </span>
-  );
-}
-
-export function WcpTag({ value, size = 14 }: { value: number | string; size?: number }) {
-  return (
-    <span className="cur-tag">
-      <WcpIcon size={size} />
       <span className="tnum">{value}</span>
     </span>
   );

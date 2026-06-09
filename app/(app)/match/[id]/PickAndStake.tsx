@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { placePickAction } from "./actions";
-import { WccIcon, WcpIcon } from "@/components/ui/CurrencyIcon";
+import { WccIcon } from "@/components/ui/CurrencyIcon";
 import { InfoChip } from "@/components/ui/InfoChip";
 import { colorFor } from "@/data/country-colors";
 
@@ -157,14 +157,14 @@ export function PickAndStake({
           <span className="caps-label" style={{ display: "inline-flex", alignItems: "center" }}>
             Stake
             <InfoChip label="How does staking work?">
-              <strong>Risk WCC to earn more WCP.</strong>
+              <strong>Risk WCC to win more WCC.</strong>
               <br />
-              Stake <em>X</em> WCC on your pick. If you&apos;re right, you earn <strong>1 + 2×X</strong> WCP and your stake is gone. If wrong, you just lose the stake.
+              Stake <em>X</em> WCC on your pick. If you&apos;re right, you win <strong>1 + 2×X</strong> WCC and your stake is gone. If wrong, you just lose the stake.
               <br />
-              Picking with 0 stake still earns 1 WCP if right.
+              Picking with 0 stake still wins 1 WCC if right.
             </InfoChip>
           </span>
-          <span className="t-small muted">Spend WCC to earn WCP</span>
+          <span className="t-small muted">Stake WCC to win more WCC</span>
         </div>
 
         <div className="balance-banner">
@@ -190,7 +190,7 @@ export function PickAndStake({
               <span className="cur-tag"><WccIcon size={18} /><span className="t-h1 tnum">{stakeCapped}</span></span>
               <span className="t-small muted">→</span>
               <span className="cur-tag" style={{ color: "var(--pitch)" }}>
-                <WcpIcon size={18} />
+                <WccIcon size={18} />
                 <span className="t-h2 tnum">+{payout}</span>
               </span>
             </div>

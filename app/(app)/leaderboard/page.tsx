@@ -2,11 +2,11 @@ import Link from "next/link";
 import { getAllMemberships, getCurrentMembership } from "@/lib/membership";
 import { BracketPicker } from "./BracketPicker";
 import { createClient } from "@/lib/supabase/server";
-import { computeMemberStats, assignFlavorLabels, type LeaderboardRow, type MatchLite, type DrinkRow, type PickRow } from "@/lib/scoring";
-import { WccIcon, WcpIcon } from "@/components/ui/CurrencyIcon";
+import { computeMemberStats, assignFlavorLabels, type LeaderboardRow, type DrinkRow, type PickRow } from "@/lib/scoring";
+import { WccIcon } from "@/components/ui/CurrencyIcon";
 import { InfoChip } from "@/components/ui/InfoChip";
 
-type SortKey = "total" | "drinks" | "wcc" | "wcp" | "stamps";
+type SortKey = "wcc" | "drinks" | "stamps";
 
 type SortDef = {
   key: SortKey;
@@ -15,10 +15,8 @@ type SortDef = {
   glyph: string | null;
 };
 const SORTS: SortDef[] = [
-  { key: "total", label: "Total", icon: null, glyph: "★" },
-  { key: "drinks", label: "Drinks", icon: null, glyph: "🍻" },
   { key: "wcc", label: "WCC", icon: <WccIcon size={14} />, glyph: null },
-  { key: "wcp", label: "WCP", icon: <WcpIcon size={14} />, glyph: null },
+  { key: "drinks", label: "Drinks", icon: null, glyph: "🍻" },
   { key: "stamps", label: "Stamps", icon: null, glyph: "🛂" },
 ];
 
@@ -28,7 +26,7 @@ export default async function LeaderboardPage({
   searchParams: Promise<{ sort?: string }>;
 }) {
   const params = await searchParams;
-  const sort: SortKey = (SORTS.find((s) => s.key === params.sort)?.key as SortKey) ?? "total";
+  const sort: SortKey = (SORTS.find((s) => s.key === params.sort)?.key as SortKey) ?? "wcc";
 
   const [member, allMemberships] = await Promise.all([
     getCurrentMembership(),
@@ -47,7 +45,7 @@ export default async function LeaderboardPage({
   // 2. Drinks are user-level (a pour in any bracket counts for that user
   //    across every bracket they're in), so fetch by user_id, not group.
   //    Picks stay per-bracket: each bracket can have its own stake/pick choice.
-  const [{ data: drinks }, { data: picks }, { data: matches }] = await Promise.all([
+  const [{ data: drinks }, { data: picks }] = await Promise.all([
     memberIds.length
       ? supabase
           .from("wc_drinks")
@@ -60,11 +58,7 @@ export default async function LeaderboardPage({
           .select("user_id, match_id, pick, stake, settled_at, payout_wcc, payout_wcp")
           .in("user_id", memberIds)
       : Promise.resolve({ data: [] }),
-    supabase.from("wc_matches").select("id, team_a_code, team_b_code"),
   ]);
-
-  const matchesById = new Map<number, MatchLite>();
-  for (const m of (matches ?? []) as MatchLite[]) matchesById.set(m.id, m);
 
   const drinksByUser = new Map<string, DrinkRow[]>();
   for (const d of (drinks ?? []) as DrinkRow[] & { user_id: string }[]) {
@@ -93,7 +87,7 @@ export default async function LeaderboardPage({
     (m) => {
       const myDrinks = drinksByUser.get(m.user_id) ?? [];
       const myPicks = picksByUser.get(m.user_id) ?? [];
-      const stats = computeMemberStats(myDrinks, myPicks, matchesById);
+      const stats = computeMemberStats(myDrinks, myPicks);
       const settled = myPicks.filter((p) => p.settled_at);
       const correct = settled.filter((p) => p.payout_wcp > 0).length;
       // single-match record
@@ -119,10 +113,8 @@ export default async function LeaderboardPage({
   const sortVal = (r: LeaderboardRow): number => {
     switch (sort) {
       case "drinks": return r.stats.drinks;
-      case "wcc": return r.stats.wcc;
-      case "wcp": return r.stats.wcp;
       case "stamps": return r.stats.stamps;
-      default: return r.stats.total;
+      default: return r.stats.wcc;
     }
   };
   const sorted = rows.slice().sort((a, b) => sortVal(b) - sortVal(a));
@@ -152,7 +144,7 @@ export default async function LeaderboardPage({
           <div className="t-h1" style={{ display: "inline-flex", alignItems: "center" }}>
             Leaderboard
             <InfoChip label="How does the leaderboard rank?">
-              Rank = <strong>Total</strong>, which is <strong>WCC + WCP</strong>. Tap a sort chip to view by any column. Ties show as <em>T-rank</em>.
+              Rank = <strong>WCC</strong> - cups earned from drinks plus winnings from correct picks. Tap a sort chip to view by any column. Ties show as <em>T-rank</em>.
             </InfoChip>
           </div>
           <div className="t-small muted">
@@ -174,7 +166,7 @@ export default async function LeaderboardPage({
           {SORTS.map((s) => (
             <Link
               key={s.key}
-              href={s.key === "total" ? "/leaderboard" : `/leaderboard?sort=${s.key}`}
+              href={s.key === "wcc" ? "/leaderboard" : `/leaderboard?sort=${s.key}`}
               className={`chip ${sort === s.key ? "is-active" : ""}`}
               style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
             >
@@ -212,8 +204,6 @@ export default async function LeaderboardPage({
                     <span>·</span>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><WccIcon size={11} /> {r.stats.wcc}</span>
                     <span>·</span>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><WcpIcon size={11} /> {r.stats.wcp}</span>
-                    <span>·</span>
                     <span>🛂 {r.stats.stamps}</span>
                   </div>
                 </div>
@@ -222,10 +212,8 @@ export default async function LeaderboardPage({
                   style={{ color: isYou ? "var(--burn)" : undefined, display: "inline-flex", alignItems: "center", gap: 6 }}
                 >
                   {sort === "wcc" ? <WccIcon size={20} /> : null}
-                  {sort === "wcp" ? <WcpIcon size={20} /> : null}
                   {sort === "drinks" ? <span aria-hidden style={{ fontSize: 18 }}>🍻</span> : null}
                   {sort === "stamps" ? <span aria-hidden style={{ fontSize: 18 }}>🛂</span> : null}
-                  {sort === "total" ? <span aria-hidden style={{ fontSize: 18 }}>★</span> : null}
                   {sortVal(r)}
                 </div>
               </div>

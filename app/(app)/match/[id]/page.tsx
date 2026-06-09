@@ -18,7 +18,7 @@ import { PourButton } from "./PourButton";
 import { BeerStampRail } from "./BeerStampRail";
 import { WatchingNow, type WatchingMember } from "./WatchingNow";
 import { PickAndStake } from "./PickAndStake";
-import { WccIcon, WcpIcon } from "@/components/ui/CurrencyIcon";
+import { WccIcon } from "@/components/ui/CurrencyIcon";
 
 function flag(code: string | null) {
   return code ? FLAG_EMOJI[code] ?? "" : "";
@@ -296,7 +296,7 @@ function PostMatchSummary({
       <div className="card empty-block" style={{ textAlign: "center" }}>
         <div className="empty-lead">You missed this one.</div>
         <div className="empty-sub" style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center" }}>
-          No pick locked - no <WcpIcon size={14} /> WCP earned.
+          No pick locked - no <WccIcon size={14} /> WCC won.
         </div>
       </div>
     );
@@ -343,7 +343,7 @@ function PostMatchSummary({
             style={{ fontSize: 32, color: correct ? "var(--pitch)" : "var(--penalty)", display: "inline-flex", alignItems: "center", gap: 6 }}
           >
             {correct ? (
-              <>+{myPick.payout_wcp} <WcpIcon size={22} /></>
+              <>+{myPick.payout_wcp} <WccIcon size={22} /></>
             ) : myPick.stake > 0 ? (
               <>-{myPick.stake} <WccIcon size={22} /></>
             ) : (
