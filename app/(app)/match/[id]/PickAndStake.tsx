@@ -36,7 +36,11 @@ export function PickAndStake({
   const [stake, setStake] = useState<number>(initial?.stake ?? 0);
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
-  const [savedAt, setSavedAt] = useState<number | null>(null);
+  // Source of truth for "what's locked in on the server right now". Starts as
+  // the initial server prop and is updated locally on each successful save so
+  // the button can compare current selection against the last known saved
+  // state (and disable when there's nothing new to submit).
+  const [savedPick, setSavedPick] = useState<ExistingPick>(initial);
   const [now, setNow] = useState<number>(() => Date.now());
 
   useEffect(() => {
@@ -45,7 +49,7 @@ export function PickAndStake({
   }, []);
 
   // Total budget = available + any existing stake on this match (you can re-allocate it)
-  const budget = availableWcc + (initial?.stake ?? 0);
+  const budget = availableWcc + (savedPick?.stake ?? 0);
   const stakeCapped = Math.min(stake, budget);
   const payout = stakeCapped > 0 ? 1 + 2 * stakeCapped : 1;
   const minsToLock = Math.floor((new Date(locksAt).getTime() - now) / 60_000);
@@ -56,14 +60,15 @@ export function PickAndStake({
       return;
     }
     setErr(null);
+    const submitted = { pick, stake: stakeCapped };
     startTransition(async () => {
       const res = await placePickAction({
         matchId,
-        pick,
-        stake: stakeCapped,
+        pick: submitted.pick,
+        stake: submitted.stake,
       });
       if ("error" in res) setErr(res.error);
-      else setSavedAt(Date.now());
+      else setSavedPick(submitted);
     });
   }
 
@@ -255,25 +260,39 @@ export function PickAndStake({
         <div className="t-small" style={{ color: "var(--penalty)" }}>{err}</div>
       ) : null}
 
-      <button
-        className="btn primary block"
-        onClick={submit}
-        disabled={pending || locked}
-        style={
-          pick && pick !== "D"
-            ? (() => {
-                const c = colorFor(pick === "A" ? teamACode : teamBCode);
-                return {
-                  background: c.primary,
-                  borderColor: c.primary,
-                  color: contrastInk(c.primary),
-                };
-              })()
-            : undefined
-        }
-      >
-        {pending ? "Locking..." : savedAt ? "Saved · update" : initial ? "Update pick" : "Lock pick"}
-      </button>
+      {(() => {
+        const matchesSaved =
+          !!savedPick &&
+          savedPick.pick === pick &&
+          savedPick.stake === stakeCapped;
+        const canSubmit = !pending && !locked && !!pick && !matchesSaved;
+        const label = pending
+          ? "Locking..."
+          : savedPick
+            ? "Update pick"
+            : "Lock pick";
+        return (
+          <button
+            className="btn primary block"
+            onClick={submit}
+            disabled={!canSubmit}
+            style={
+              canSubmit && pick && pick !== "D"
+                ? (() => {
+                    const c = colorFor(pick === "A" ? teamACode : teamBCode);
+                    return {
+                      background: c.primary,
+                      borderColor: c.primary,
+                      color: contrastInk(c.primary),
+                    };
+                  })()
+                : undefined
+            }
+          >
+            {label}
+          </button>
+        );
+      })()}
     </div>
   );
 }

@@ -146,7 +146,10 @@ function MatchHero({
 }) {
   const aPicked = pickedSide === "A";
   const bPicked = pickedSide === "B";
+  const drawPicked = pickedSide === "D";
   const hasTeamPick = aPicked || bPicked;
+  const teamAColor = match.team_a_code ? colorFor(match.team_a_code) : null;
+  const teamBColor = match.team_b_code ? colorFor(match.team_b_code) : null;
   return (
     <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18 }}>
@@ -162,10 +165,43 @@ function MatchHero({
             <span className="dim" style={{ fontFamily: "var(--ff-display)", fontSize: 24 }}>-</span>
             <span className="t-display tnum">{match.score_b ?? 0}</span>
           </div>
-        ) : pickedSide === "D" ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-            <div className="t-display dim" style={{ fontSize: 36 }}>vs</div>
-            <span className="badge stake" style={{ fontSize: 9 }}>✓ Draw</span>
+        ) : drawPicked ? (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 6,
+              padding: "12px 18px",
+              borderRadius: "var(--r-md)",
+              border: "2px solid var(--stout)",
+              background:
+                teamAColor && teamBColor
+                  ? `linear-gradient(90deg, ${teamAColor.tint} 0%, ${teamAColor.tint} 50%, ${teamBColor.tint} 50%, ${teamBColor.tint} 100%)`
+                  : "var(--paper)",
+              boxShadow: "0 4px 14px -6px rgba(40,22,4,0.25)",
+              color: "var(--stout)",
+            }}
+          >
+            <span
+              className="t-display"
+              style={{ fontSize: 26, lineHeight: 1, fontWeight: 800 }}
+            >
+              vs
+            </span>
+            <span
+              className="badge"
+              style={{
+                background: "var(--stout)",
+                color: "var(--foam-lit)",
+                fontSize: 9,
+                padding: "2px 8px",
+                marginTop: 2,
+                letterSpacing: "0.04em",
+              }}
+            >
+              ✓ Your pick · Draw
+            </span>
           </div>
         ) : (
           <div className="t-display dim" style={{ fontSize: 36 }}>vs</div>
@@ -536,6 +572,8 @@ async function PreView({
 
   // Hero takes on the picked country's colors, but only once the pick is
   // locked (server-confirmed) - not while the user is still tapping sides.
+  // Draw state: blend both teams' tints so the panel still reads as "picked"
+  // with equal weight to each side.
   const pickedCode =
     my?.pick === "A"
       ? match.team_a_code
@@ -543,19 +581,30 @@ async function PreView({
         ? match.team_b_code
         : null;
   const accent = colorFor(pickedCode);
+  const drawPicked = my?.pick === "D";
+  const teamAColor = match.team_a_code ? colorFor(match.team_a_code) : null;
+  const teamBColor = match.team_b_code ? colorFor(match.team_b_code) : null;
+
+  const heroWrapStyle: React.CSSProperties = {
+    borderRadius: "var(--r-lg)",
+    padding: "6px 14px 10px",
+  };
+  if (pickedCode) {
+    heroWrapStyle.borderLeft = `4px solid ${accent.primary}`;
+    heroWrapStyle.background = accent.tint;
+  } else if (drawPicked && teamAColor && teamBColor) {
+    heroWrapStyle.borderLeft = `4px solid ${teamAColor.primary}`;
+    heroWrapStyle.borderRight = `4px solid ${teamBColor.primary}`;
+    heroWrapStyle.background = `linear-gradient(90deg, ${teamAColor.tint} 0%, ${teamBColor.tint} 100%)`;
+  } else {
+    heroWrapStyle.borderLeft = "4px solid transparent";
+  }
 
   return (
     <>
       <MatchAppbar match={match} />
       <div className="screen" style={{ gap: 18 }}>
-        <div
-          style={{
-            borderRadius: "var(--r-lg)",
-            padding: "6px 14px 10px",
-            borderLeft: pickedCode ? `4px solid ${accent.primary}` : "4px solid transparent",
-            background: pickedCode ? accent.tint : undefined,
-          }}
-        >
+        <div style={heroWrapStyle}>
           <MatchHero match={match} pickedSide={my?.pick ?? null} />
         </div>
 

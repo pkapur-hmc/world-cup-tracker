@@ -1280,9 +1280,12 @@ html, body {
 .info-chip-pop p:last-child { margin-bottom: 0; }
 
 /* ---------- Bottom sheet ----------
-   Root is fixed and width-clamped to the phone frame; the backdrop is its
-   own fixed element that covers the whole viewport so taps anywhere outside
-   the sheet dismiss it. */
+   Mobile-first: 100dvh + safe-area-inset-top so titles never sit under the
+   notch; scroll lives on .sheet-body (not .sheet) with overscroll-behavior:
+   contain so scroll never chains into the page behind; visibility flips to
+   hidden after the close transition so the closed sheet is fully inert.
+
+   data-state="open" / "closed" drives the animation states. */
 .sheet-root {
   position: fixed;
   z-index: 80;
@@ -1293,43 +1296,59 @@ html, body {
   width: 100%;
   max-width: 480px;
   pointer-events: none;
+  visibility: hidden;
+  /* Visibility flips at the END of the transition so the close slide-down
+     plays out before the element exits the render tree. */
+  transition: visibility 0s linear 300ms;
 }
-.sheet-root.is-open { pointer-events: auto; }
+.sheet-root[data-state="open"] {
+  pointer-events: auto;
+  visibility: visible;
+  transition: visibility 0s linear 0s;
+}
 .sheet-backdrop {
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
   background: rgba(28, 20, 12, 0.45);
   border: none;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 180ms ease;
+  transition: opacity 220ms ease;
+  -webkit-tap-highlight-color: transparent;
 }
-.sheet-root.is-open .sheet-backdrop { opacity: 1; }
+.sheet-root[data-state="open"] .sheet-backdrop { opacity: 1; }
 .sheet {
   position: absolute;
   left: 0; right: 0; bottom: 0;
   background: var(--foam);
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
-  padding: 8px 20px 28px;
-  box-shadow: 0 -16px 40px -10px rgba(40,22,4,0.25);
+  /* Padding lives on inner elements (title/body) so the rounded top and
+     drag-handle aren't pushed away from the edge. */
+  padding: 0;
+  box-shadow: 0 -16px 40px -10px rgba(40, 22, 4, 0.25);
   transform: translateY(110%);
-  transition: transform 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
-  max-height: 88vh;
-  overflow-y: auto;
+  transition: transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 16px);
   display: flex;
   flex-direction: column;
-  touch-action: pan-y;
+  /* No scroll on .sheet itself — child .sheet-body owns scroll. */
+  overflow: hidden;
+  /* Drag is handled via pointer events on the handle zone, so block native
+     touch panning on the chrome to keep the gesture exclusively ours. */
+  touch-action: none;
+  overscroll-behavior: contain;
 }
-.sheet-root.is-open .sheet { transform: translateY(0); }
+.sheet-root[data-state="open"] .sheet { transform: translateY(0); }
+
 .sheet-handle-zone {
   display: grid;
   place-items: center;
   padding: 10px 0 6px;
   cursor: grab;
   touch-action: none;
+  flex: 0 0 auto;
+  -webkit-tap-highlight-color: transparent;
 }
 .sheet-handle-zone:active { cursor: grabbing; }
 .sheet-handle {
@@ -1343,13 +1362,21 @@ html, body {
   font-weight: 800;
   font-size: 22px;
   letter-spacing: -0.01em;
-  padding: 4px 4px 10px;
+  padding: 4px 20px 10px;
+  flex: 0 0 auto;
 }
 .sheet-body {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding-bottom: 4px;
+  padding: 0 20px max(20px, env(safe-area-inset-bottom, 0px));
+  /* This is the ONLY scrollable region. Vertical pan only, no chain. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 /* ---------- Quick-pour stepper ---------- */
