@@ -2,12 +2,11 @@ import Link from "next/link";
 import { getAllMemberships, getCurrentMembership, getCrossBracketMembers } from "@/lib/membership";
 import { BracketStandings } from "./BracketStandings";
 import { getLiveMatches, getNextMatch, type Match } from "@/lib/fixtures";
-import { getMemberStats } from "@/lib/stats";
+import { getMemberStats, getRankInGroup } from "@/lib/stats";
 import { getPicksForUsersInMatch, hasUserEverPicked } from "@/lib/picks";
 import { FLAG_EMOJI } from "@/data/flag-emojis";
 import { colorFor } from "@/data/country-colors";
 import { WccIcon } from "@/components/ui/CurrencyIcon";
-import { InfoChip } from "@/components/ui/InfoChip";
 import { PickPanel } from "@/components/ui/PickPanel";
 import { LocalTime } from "@/components/ui/LocalTime";
 import { HomeInviteCard } from "./HomeInviteCard";
@@ -156,23 +155,85 @@ function NextUpRow({ match }: { match: Match }) {
   );
 }
 
-function ThreeVerbsStrip() {
+function HowToWinPanel() {
   return (
-    <div className="three-verbs">
-      <div className="verb">
-        <span className="verb-icon" aria-hidden>🍺</span>
-        <div className="verb-name">Drink</div>
-        <div className="verb-reward">+1 WCC</div>
+    <div className="how-to-win">
+      <div className="how-to-win-title">How to Win</div>
+      <div className="how-to-win-sub">
+        Stack <WccIcon size={12} /> WCC three ways
       </div>
-      <div className="verb">
-        <span className="verb-icon" aria-hidden>🎯</span>
-        <div className="verb-name">Pick</div>
-        <div className="verb-reward">+1 if right</div>
+      <div className="three-verbs">
+        <div className="verb">
+          <span className="verb-icon" aria-hidden>🍺</span>
+          <div className="verb-name">Drink</div>
+          <div className="verb-reward">+1 WCC</div>
+        </div>
+        <div className="verb">
+          <span className="verb-icon" aria-hidden>🎯</span>
+          <div className="verb-name">Pick</div>
+          <div className="verb-reward">+1 if right</div>
+        </div>
+        <div className="verb">
+          <span className="verb-icon" aria-hidden>🛂</span>
+          <div className="verb-name">Stamp</div>
+          <div className="verb-reward">+2 + flag</div>
+        </div>
       </div>
-      <div className="verb">
-        <span className="verb-icon" aria-hidden>🛂</span>
-        <div className="verb-name">Stamp</div>
-        <div className="verb-reward">+2 + flag</div>
+    </div>
+  );
+}
+
+function StatusCard({
+  wcc,
+  drinks,
+  stamps,
+  rank,
+  total,
+  bracketName,
+  bracketCount,
+}: {
+  wcc: number;
+  drinks: number;
+  stamps: number;
+  rank: number | null;
+  total: number | null;
+  bracketName: string | null;
+  bracketCount: number;
+}) {
+  return (
+    <div className="status-card">
+      <div className="status-eyebrow">Your cup</div>
+      <div className="status-wcc-row">
+        <span className="status-wcc tnum">{wcc}</span>
+        <span className="status-wcc-unit">
+          <WccIcon size={20} />
+          <span>WCC</span>
+        </span>
+      </div>
+      {bracketName && rank != null && total != null ? (
+        <div className="status-rank">
+          <strong>#{rank}</strong>
+          <span className="dim"> of {total} </span>
+          in <strong>{bracketName}</strong>
+        </div>
+      ) : bracketCount > 1 ? (
+        <div className="status-rank">
+          Tracked across <strong>{bracketCount}</strong> brackets
+        </div>
+      ) : null}
+      <div className="status-substats">
+        <div className="status-substat">
+          <span className="ss-num tnum">{drinks}</span>
+          <span className="ss-label">Drinks</span>
+        </div>
+        <div className="status-substat">
+          <span className="ss-num tnum">{stamps}</span>
+          <span className="ss-label">Stamps</span>
+        </div>
+        <div className="status-substat">
+          <span className="ss-num tnum">{stamps}/48</span>
+          <span className="ss-label">Passport</span>
+        </div>
       </div>
     </div>
   );
@@ -242,12 +303,15 @@ export default async function HomePage() {
   const inMultiple = allMemberships.length > 1;
   const soloBracket = inMultiple ? null : allMemberships[0] ?? null;
 
-  const [liveMatches, nextMatch, stats, crossBracketMembers, everPicked] = await Promise.all([
+  const [liveMatches, nextMatch, stats, crossBracketMembers, everPicked, soloRank] = await Promise.all([
     getLiveMatches(),
     getNextMatch(),
     getMemberStats("", member.userId),
     getCrossBracketMembers(member.userId),
     hasUserEverPicked(member.userId),
+    soloBracket
+      ? getRankInGroup(soloBracket.groupId, member.userId)
+      : Promise.resolve(null),
   ]);
 
   let nextMyPick: MyPick = null;
@@ -265,57 +329,36 @@ export default async function HomePage() {
   }
 
   return (
-    <>
-      <div className="appbar">
-        <div style={{ flex: 1 }}>
-          <div className="group-name">
-            {soloBracket ? soloBracket.groupName : "Your brackets"}
-          </div>
-          <div className="group-meta">
-            {soloBracket
-              ? `${soloBracket.memberCount} member${soloBracket.memberCount === 1 ? "" : "s"}`
-              : `In ${allMemberships.length} brackets`}
-          </div>
-        </div>
-      </div>
+    <div className="screen home-screen">
+      <StatusCard
+        wcc={stats.wcc}
+        drinks={stats.drinks}
+        stamps={stats.stamps}
+        rank={soloRank?.rank ?? null}
+        total={soloRank?.total ?? null}
+        bracketName={soloBracket?.groupName ?? null}
+        bracketCount={allMemberships.length}
+      />
 
-      <div className="screen">
-        {liveMatches.length > 0 ? (
-          <LiveHero match={liveMatches[0]} />
-        ) : nextMatch ? (
-          <UpcomingHero match={nextMatch} myPick={nextMyPick} />
-        ) : (
-          <EmptyDay />
-        )}
+      {liveMatches.length > 0 ? (
+        <LiveHero match={liveMatches[0]} />
+      ) : nextMatch ? (
+        <UpcomingHero match={nextMatch} myPick={nextMyPick} />
+      ) : (
+        <EmptyDay />
+      )}
 
-        {liveMatches.length > 0 && nextMatch ? <NextUpRow match={nextMatch} /> : null}
+      {liveMatches.length > 0 && nextMatch ? <NextUpRow match={nextMatch} /> : null}
 
-        <OnboardingChecklist
-          picked={everPicked}
-          drank={stats.drinks > 0}
-          stamped={stats.stamps > 0}
-        />
+      <OnboardingChecklist
+        picked={everPicked}
+        drank={stats.drinks > 0}
+        stamped={stats.stamps > 0}
+      />
 
-        <ThreeVerbsStrip />
+      <HowToWinPanel />
 
-        <Link
-          href="/schedule"
-          className="btn ghost block"
-          style={{
-            justifyContent: "space-between",
-            textDecoration: "none",
-            marginTop: -4,
-            border: "1.5px dashed var(--stout-12)",
-          }}
-        >
-          <span>See full schedule</span>
-          <span className="dim">›</span>
-        </Link>
-
-        {soloBracket ? (
-          <HomeInviteCard inviteCode={soloBracket.inviteCode} groupName={soloBracket.groupName} />
-        ) : null}
-
+      {allMemberships.length > 1 ? (
         <BracketStandings
           brackets={allMemberships.map((g) => ({
             groupId: g.groupId,
@@ -324,52 +367,13 @@ export default async function HomePage() {
           }))}
           userId={member.userId}
         />
+      ) : null}
 
-        <div className="section-label" style={{ marginTop: 8 }}>
-          <span className="caps-label">Your stats</span>
-        </div>
+      {soloBracket ? (
+        <HomeInviteCard inviteCode={soloBracket.inviteCode} groupName={soloBracket.groupName} />
+      ) : null}
 
-        <div className="card elevated">
-          <div className="stat-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
-            <div className="stat-cell">
-              <div className="stat-num">{stats.drinks}</div>
-              <div className="stat-label">Drinks</div>
-            </div>
-            <div className="stat-cell">
-              <div className="stat-num" style={{ color: "var(--burn)" }}>{stats.wcc}</div>
-              <div className="stat-label" style={{ display: "inline-flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
-                <WccIcon size={12} /> WCC
-                <InfoChip label="What is WCC?">
-                  <strong>World Cup Cups.</strong> +1 per basic drink, +2 per country beer. Win more from correct picks (1 + 2× stake). Drives the leaderboard.
-                </InfoChip>
-              </div>
-            </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginTop: 14,
-              paddingTop: 14,
-              borderTop: "1px solid var(--stout-12)",
-            }}
-          >
-            <div>
-              <span className="t-small muted">Passport</span>
-              <span className="t-sub tnum" style={{ marginLeft: 6 }}>
-                {stats.stamps}
-                <span className="muted">/48</span>
-              </span>
-            </div>
-            <Link href="/passport" className="link" style={{ textDecoration: "none" }}>
-              View →
-            </Link>
-          </div>
-        </div>
-
-        <div style={{ height: 8 }} />
-      </div>
-    </>
+      <div style={{ height: 8 }} />
+    </div>
   );
 }

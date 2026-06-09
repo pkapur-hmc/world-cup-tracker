@@ -183,24 +183,19 @@ export default async function PassportPage() {
               <span className="t-small muted">Tap to see beers</span>
             </div>
             <div className="unclaimed-grid">
-              {unclaimed.map((p) => {
-                const accent = colorFor(p.code);
-                return (
-                  <Link
-                    key={p.code}
-                    href={`/team/${p.code}`}
-                    className="unclaimed-cell"
-                    aria-label={p.name}
-                    style={{
-                      textDecoration: "none",
-                      color: "inherit",
-                      borderLeft: `3px solid ${accent.primary}`,
-                    }}
-                  >
-                    {flag(p.code)}
-                  </Link>
-                );
-              })}
+              {unclaimed.map((p) => (
+                <Link
+                  key={p.code}
+                  href={`/team/${p.code}`}
+                  className="unclaimed-cell"
+                  aria-label={p.name}
+                  title={p.name}
+                  style={{ textDecoration: "none", color: "inherit" }}
+                >
+                  <span className="uc-flag" aria-hidden>{flag(p.code)}</span>
+                  <span className="uc-name">{p.name}</span>
+                </Link>
+              ))}
             </div>
           </div>
         ) : null}

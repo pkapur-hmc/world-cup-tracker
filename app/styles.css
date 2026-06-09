@@ -145,12 +145,13 @@ html, body {
 
 /* global brand header (rendered once in layout, above every appbar) */
 .top-bar {
-  padding: calc(env(safe-area-inset-top, 0px) + 18px) 20px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 20px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: var(--foam);
+  background: linear-gradient(180deg, var(--paper) 0%, var(--bubble) 100%);
+  border-bottom: 1px solid var(--stout-12);
 }
 .top-bar-brand {
   display: inline-flex;
@@ -159,18 +160,31 @@ html, body {
   text-decoration: none;
   color: inherit;
 }
+.top-bar-brand img { display: block; }
 .top-bar-brand .top-bar-wordmark {
   font-family: var(--ff-display);
   font-weight: 800;
-  font-size: 14px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-style: italic;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  color: var(--stout);
+}
+.top-bar .icon-btn {
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--stout-55);
+}
+.top-bar .icon-btn:hover {
+  background: rgba(40, 22, 4, 0.06);
   color: var(--stout);
 }
 
 /* page header (per-screen title) */
 .appbar {
-  padding: 4px 20px 14px;
+  padding: 22px 20px 14px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -197,6 +211,9 @@ html, body {
   flex-direction: column;
   gap: 14px;
 }
+/* Pages without their own .appbar (home) need top breathing room
+   so content doesn't sit flush against the TopBar's hairline. */
+.home-screen { padding-top: 18px; }
 
 /* ---------- Bottom tab bar ----------
    Anchored to the inside-bottom of .app-frame (sticks under the phone
@@ -281,6 +298,153 @@ html, body {
 .card .card-head {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 10px;
+}
+
+/* ---------- Status Card (home page scoreboard) ---------- */
+.status-card {
+  background:
+    radial-gradient(ellipse at top, rgba(229, 156, 32, 0.10), transparent 60%),
+    var(--bubble);
+  border: 1px solid var(--stout-12);
+  border-radius: var(--r-lg);
+  padding: 20px 18px 16px;
+  text-align: center;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 1px 2px rgba(40, 22, 4, 0.04);
+}
+.status-card .status-eyebrow {
+  font-family: var(--ff-ui);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--stout-55);
+  margin-bottom: 6px;
+}
+.status-card .status-wcc-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.status-card .status-wcc {
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 72px;
+  line-height: 0.9;
+  letter-spacing: -0.035em;
+  color: var(--burn);
+}
+.status-card .status-wcc-unit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--stout-55);
+}
+.status-card .status-rank {
+  font-family: var(--ff-display);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--stout);
+  margin-top: 8px;
+}
+.status-card .status-rank strong {
+  font-weight: 800;
+  color: var(--stout);
+}
+.status-card .status-rank .dim { color: var(--stout-55); }
+.status-card .status-substats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--stout-12);
+}
+.status-card .status-substat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.status-card .ss-num {
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--stout);
+  line-height: 1;
+}
+.status-card .ss-label {
+  font-family: var(--ff-ui);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--stout-55);
+}
+
+/* ---------- How to Win panel (home) ---------- */
+.how-to-win {
+  background: var(--bubble);
+  border: 1px solid var(--stout-12);
+  border-radius: var(--r-lg);
+  padding: 18px 16px 16px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 1px 2px rgba(40, 22, 4, 0.04);
+}
+.how-to-win-title {
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.015em;
+  text-align: center;
+  color: var(--stout);
+}
+.how-to-win-sub {
+  font-family: var(--ff-ui);
+  font-size: 12px;
+  color: var(--stout-55);
+  text-align: center;
+  margin-top: 4px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.how-to-win .three-verbs {
+  padding: 0;
+  margin: 0;
+}
+.how-to-win .verb {
+  background: var(--paper);
+  border-radius: var(--r-md);
+  padding: 12px 8px;
+}
+.how-to-win .verb + .verb::before { display: none; }
+.how-to-win .verb-icon { font-size: 26px; opacity: 1; }
+.how-to-win .verb-name {
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: -0.005em;
+  margin-top: 6px;
+  color: var(--stout);
+  text-transform: none;
+}
+.how-to-win .verb-reward {
+  font-family: var(--ff-ui);
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--stout-70);
+  opacity: 1;
+  margin-top: 2px;
 }
 
 /* ---------- Hero Action (home page lead card) ---------- */

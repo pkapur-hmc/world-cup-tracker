@@ -151,27 +151,42 @@ a,
   background: var(--paper);
   border: 1.5px dashed var(--stout-35);
   border-radius: var(--r-md);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  font-size: 22px;
-  filter: grayscale(1);
-  opacity: 0.45;
-  position: relative;
-}
-.unclaimed-cell:hover { opacity: 0.7; }
-.unclaimed-cell.revealed {
-  background: var(--bubble);
-  border-style: solid;
-  border-color: var(--stout-12);
-  opacity: 1;
-  filter: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  padding: 6px;
+  gap: 4px;
+  padding: 6px 4px;
+  cursor: pointer;
+  position: relative;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.unclaimed-cell:hover {
+  background: var(--bubble);
+  border-color: var(--stout-12);
+}
+.unclaimed-cell .uc-flag {
+  font-size: 22px;
+  line-height: 1;
+}
+.unclaimed-cell .uc-name {
+  font-family: var(--ff-ui);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.01em;
+  color: var(--stout-70);
+  text-align: center;
+  line-height: 1.1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 100%;
+}
+.unclaimed-cell.revealed {
+  background: var(--bubble);
+  border-style: solid;
+  border-color: var(--stout-12);
 }
 .unclaimed-cell.revealed .ucr-flag { font-size: 22px; }
 .unclaimed-cell.revealed .ucr-code { font-family: var(--ff-ui); font-weight: 700; font-size: 10px; }
