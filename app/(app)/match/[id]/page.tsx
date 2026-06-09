@@ -18,6 +18,7 @@ import { PourButton } from "./PourButton";
 import { BeerStampRail } from "./BeerStampRail";
 import { WatchingNow, type WatchingMember } from "./WatchingNow";
 import { PickAndStake } from "./PickAndStake";
+import { PickPanel } from "@/components/ui/PickPanel";
 import { WccIcon } from "@/components/ui/CurrencyIcon";
 
 function flag(code: string | null) {
@@ -450,14 +451,6 @@ async function LiveView({
   const beersA = match.team_a_code ? COUNTRY_BEERS[match.team_a_code] ?? [] : [];
   const beersB = match.team_b_code ? COUNTRY_BEERS[match.team_b_code] ?? [] : [];
 
-  const pickedCode =
-    myPick?.pick === "A"
-      ? match.team_a_code
-      : myPick?.pick === "B"
-        ? match.team_b_code
-        : null;
-  const accent = colorFor(pickedCode);
-
   const members: WatchingMember[] = picks.map((p) => ({
     userId: p.userId,
     displayName: p.userId === userId ? "You" : p.displayName,
@@ -478,44 +471,29 @@ async function LiveView({
       <div className="screen" style={{ paddingBottom: 92, gap: 16 }}>
         <MatchHero match={match} accentTeams />
 
-        {/* Your pick row */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "10px 14px",
-            background: pickedCode ? accent.tint : "var(--paper)",
-            borderRadius: "var(--r-md)",
-            borderLeft: pickedCode ? `4px solid ${accent.primary}` : undefined,
-            color: accent.ink,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {myPick?.pick ? (
+          <PickPanel
+            teamACode={match.team_a_code}
+            teamBCode={match.team_b_code}
+            pick={myPick.pick}
+            stake={myPick.stake}
+          />
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "10px 12px",
+              background: "var(--paper)",
+              border: "1px solid var(--stout-12)",
+              borderRadius: "var(--r-md)",
+            }}
+          >
             <span className="caps-label">Your pick</span>
-            {myPick?.pick ? (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <span className="flag">
-                  {myPick.pick === "A"
-                    ? flag(match.team_a_code)
-                    : myPick.pick === "B"
-                      ? flag(match.team_b_code)
-                      : "•"}
-                </span>
-                <span className="t-sub">
-                  {myPick.pick === "A" ? match.team_a_code : myPick.pick === "B" ? match.team_b_code : "Draw"}
-                </span>
-              </span>
-            ) : (
-              <span className="t-small muted">no pick</span>
-            )}
+            <span className="t-small muted">no pick locked</span>
           </div>
-          {myPick?.stake ? (
-            <span className="badge stake tnum" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <WccIcon size={12} /> {myPick.stake} staked
-            </span>
-          ) : null}
-        </div>
+        )}
 
         <PourButton
           matchId={match.id}
