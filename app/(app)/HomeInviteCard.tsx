@@ -23,10 +23,7 @@ export function HomeInviteCard({
   async function shareOrCopy() {
     try {
       if (typeof navigator !== "undefined" && "share" in navigator) {
-        await navigator.share({
-          title: `Join ${groupName} on The World Cup Cup`,
-          text: shareText,
-        });
+        await navigator.share({ text: shareText });
         return;
       }
     } catch {
