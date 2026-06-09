@@ -10,6 +10,7 @@ import { BackButton } from "@/components/ui/BackButton";
 import { WccIcon } from "@/components/ui/CurrencyIcon";
 import { CountryBottle } from "@/components/ui/CountryBottle";
 import { InfoChip } from "@/components/ui/InfoChip";
+import { LocalTime } from "@/components/ui/LocalTime";
 
 const NAMES: Record<string, string> = {
   MEX: "Mexico", RSA: "South Africa", KOR: "South Korea", CZE: "Czechia",
@@ -28,22 +29,6 @@ const NAMES: Record<string, string> = {
 
 function flag(code: string | null) {
   return code ? FLAG_EMOJI[code] ?? "" : "";
-}
-
-function shortDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function timeOfDay(iso: string) {
-  return new Date(iso).toLocaleTimeString(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
 }
 
 function teamResult(match: Match, code: string): "W" | "L" | "D" | null {
@@ -372,7 +357,11 @@ export default async function TeamPage({
                       {b.name}
                     </div>
                     <div className="t-small muted" style={{ fontSize: 10 }}>
-                      {claimed ? `🛂 ${shortDate(s.firstAt)}` : "tap to find a bar →"}
+                      {claimed ? (
+                        <>🛂 <LocalTime iso={s.firstAt} mode="dayShort" /></>
+                      ) : (
+                        "tap to find a bar →"
+                      )}
                     </div>
                   </a>
                 );
@@ -582,7 +571,7 @@ export default async function TeamPage({
                       </span>
                     </div>
                     <div className="t-small muted" style={{ marginTop: 1 }}>
-                      {shortDate(m.kickoff_at)} · {timeOfDay(m.kickoff_at)}
+                      <LocalTime iso={m.kickoff_at} mode="dayShort" /> · <LocalTime iso={m.kickoff_at} mode="time" />
                     </div>
                     {/* journal chips */}
                     {(my?.pick || drinks > 0 || beers > 0) ? (

@@ -5,6 +5,7 @@ import { getUserPicksByMatch } from "@/lib/picks";
 import { FLAG_EMOJI } from "@/data/flag-emojis";
 import { colorFor } from "@/data/country-colors";
 import { PickPanel } from "@/components/ui/PickPanel";
+import { LocalTime } from "@/components/ui/LocalTime";
 
 type MyPick = { pick: "A" | "D" | "B"; stake: number };
 
@@ -45,11 +46,6 @@ function dayLabel(dayIso: string): { emph: string | null; rest: string } {
 function MatchCard({ match, myPick }: { match: Match; myPick?: MyPick }) {
   const tA = match.team_a_code ?? "TBD";
   const tB = match.team_b_code ?? "TBD";
-  const time = new Date(match.kickoff_at).toLocaleTimeString(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
 
   let badge: React.ReactNode;
   let meta: string;
@@ -68,7 +64,11 @@ function MatchCard({ match, myPick }: { match: Match; myPick?: MyPick }) {
     badge = <span className="badge final">Postponed</span>;
     meta = "rescheduling";
   } else {
-    badge = <span className="badge time">⏰ {time}</span>;
+    badge = (
+      <span className="badge time">
+        ⏰ <LocalTime iso={match.kickoff_at} mode="time" />
+      </span>
+    );
     meta = "pickable";
   }
 

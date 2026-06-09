@@ -5,6 +5,7 @@ import { FLAG_EMOJI } from "@/data/flag-emojis";
 import { COUNTRY_BEERS } from "@/data/country-beers";
 import { colorFor } from "@/data/country-colors";
 import { CountryBottle } from "@/components/ui/CountryBottle";
+import { LocalTime } from "@/components/ui/LocalTime";
 
 type Stamp = {
   country_code: string;
@@ -252,7 +253,9 @@ function CountryStampCard({ progress }: { progress: CountryProgress }) {
           <div className="t-small muted">
             {progress.claimedBeers} / {progress.totalBeers} stamps · {progress.pours} pour
             {progress.pours === 1 ? "" : "s"}
-            {progress.mostRecentAt ? ` · last ${shortDate(progress.mostRecentAt)}` : ""}
+            {progress.mostRecentAt ? (
+              <> · last <LocalTime iso={progress.mostRecentAt} mode="dateShort" /></>
+            ) : null}
           </div>
         </div>
         <span

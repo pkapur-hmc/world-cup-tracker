@@ -10,6 +10,7 @@ import { colorFor } from "@/data/country-colors";
 import { WccIcon } from "@/components/ui/CurrencyIcon";
 import { InfoChip } from "@/components/ui/InfoChip";
 import { PickPanel } from "@/components/ui/PickPanel";
+import { LocalTime } from "@/components/ui/LocalTime";
 import { HomeInviteCard } from "./HomeInviteCard";
 
 type MyPick = { pick: "A" | "D" | "B"; stake: number } | null;
@@ -35,27 +36,6 @@ function countdownTo(iso: string): string {
   }
   if (h > 0) return `in ${h}h ${String(m).padStart(2, "0")}m`;
   return `in ${m}m`;
-}
-
-function timeOfDay(iso: string): string {
-  const d = new Date(iso);
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
-}
-
-function dayLabel(iso: string): string {
-  const d = new Date(iso);
-  const today = new Date();
-  const tomorrow = new Date();
-  tomorrow.setDate(today.getDate() + 1);
-  const sameDay = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
-  if (sameDay(d, today)) return "Today";
-  if (sameDay(d, tomorrow)) return "Tomorrow";
-  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 }
 
 function LiveBlock({ match, watching }: { match: Match; watching: number }) {
@@ -154,8 +134,8 @@ function NextBlock({ match, myPick }: { match: Match; myPick: MyPick }) {
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div className="t-h2 tnum">{timeOfDay(match.kickoff_at)}</div>
-            <div className="t-small muted">{dayLabel(match.kickoff_at)}</div>
+            <div className="t-h2 tnum"><LocalTime iso={match.kickoff_at} mode="time" /></div>
+            <div className="t-small muted"><LocalTime iso={match.kickoff_at} mode="dayShort" /></div>
           </div>
         </div>
 

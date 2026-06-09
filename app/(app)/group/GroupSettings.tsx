@@ -11,6 +11,7 @@ import {
   updateMyDisplayNameAction,
 } from "./actions";
 import { inviteUrlFor } from "@/lib/origin";
+import { LocalTime } from "@/components/ui/LocalTime";
 
 type Member = {
   userId: string;
@@ -138,7 +139,7 @@ export function GroupSettings({
                     {isYou ? " (you)" : ""}
                   </div>
                   <div className="t-small muted">
-                    {isHost ? "Host" : "Member"} · joined {new Date(m.joinedAt).toLocaleDateString()}
+                    {isHost ? "Host" : "Member"} · joined <LocalTime iso={m.joinedAt} mode="dateShort" />
                   </div>
                 </div>
                 {canActOnThem ? (

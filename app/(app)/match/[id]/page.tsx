@@ -19,32 +19,11 @@ import { BeerStampRail } from "./BeerStampRail";
 import { WatchingNow, type WatchingMember } from "./WatchingNow";
 import { PickAndStake } from "./PickAndStake";
 import { PickPanel } from "@/components/ui/PickPanel";
+import { LocalTime } from "@/components/ui/LocalTime";
 import { WccIcon } from "@/components/ui/CurrencyIcon";
 
 function flag(code: string | null) {
   return code ? FLAG_EMOJI[code] ?? "" : "";
-}
-
-function timeOfDay(iso: string) {
-  return new Date(iso).toLocaleTimeString(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
-
-function dayLabel(iso: string): string {
-  const d = new Date(iso);
-  const today = new Date();
-  const tomorrow = new Date();
-  tomorrow.setDate(today.getDate() + 1);
-  const sameDay = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
-  if (sameDay(d, today)) return "Today";
-  if (sameDay(d, tomorrow)) return "Tomorrow";
-  return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
 }
 
 function countdownTo(iso: string) {
@@ -202,7 +181,7 @@ function MatchHero({
         <>
           <div className="t-h1 tnum" style={{ marginTop: 18 }}>{countdownTo(match.kickoff_at)}</div>
           <div className="t-sub" style={{ marginTop: 6 }}>
-            {dayLabel(match.kickoff_at)} · {timeOfDay(match.kickoff_at)}
+            <LocalTime iso={match.kickoff_at} mode="dayLong" /> · <LocalTime iso={match.kickoff_at} mode="time" />
           </div>
           {match.venue ? (
             <div className="t-small muted" style={{ marginTop: 2 }}>
