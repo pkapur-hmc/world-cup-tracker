@@ -14,7 +14,7 @@ export function GroupsList({ groups }: { groups: GroupMembershipSummary[] }) {
       if (typeof navigator !== "undefined" && "share" in navigator) {
         await navigator.share({
           title: `Join ${g.groupName} on The World Cup Cup`,
-          text: `Hop into our World Cup 2026 bracket: ${url}`,
+          text: "Hop into our World Cup 2026 bracket:",
           url,
         });
         return;
