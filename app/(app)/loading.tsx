@@ -18,7 +18,7 @@ export default function AppLoading() {
         padding: 24,
       }}
     >
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 6 }}>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 10 }}>
         <TrophySvg />
         <MugSvg />
       </div>
@@ -44,8 +44,8 @@ function TrophySvg() {
     <svg
       className="ld-trophy"
       viewBox="0 0 512 512"
-      width="92"
-      height="92"
+      width="110"
+      height="110"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
     >
@@ -86,13 +86,14 @@ function TrophySvg() {
 
 function MugSvg() {
   // Geometry copied verbatim from public/mark.svg so the loader cup is
-  // identical to the brand mark. The amber + foam fill is the only animated
-  // layer; everything else is the static cup, handle, and base.
+  // identical to the brand mark. ViewBox tightened to the visible content
+  // (pour stream at y=28 down to base at y=388) so flex-end alignment puts
+  // the cup base on the same floor as the trophy base.
   return (
     <svg
-      viewBox="0 0 460 540"
-      width="150"
-      height="176"
+      viewBox="100 28 320 360"
+      width="135"
+      height="152"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
     >
