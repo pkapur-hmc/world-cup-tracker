@@ -3,7 +3,7 @@ import { getMatchesByDay, type Match } from "@/lib/fixtures";
 import { getCurrentMembership } from "@/lib/membership";
 import { getUserPicksByMatch } from "@/lib/picks";
 import { FLAG_EMOJI } from "@/data/flag-emojis";
-import { colorFor } from "@/data/country-colors";
+import { PickPanel } from "@/components/ui/PickPanel";
 
 type MyPick = { pick: "A" | "D" | "B"; stake: number };
 
@@ -39,45 +39,6 @@ function dayLabel(dayIso: string): { emph: string | null; rest: string } {
   if (diffDays === 1) return { emph: "Tomorrow", rest: ` · ${monthDay}` };
   if (diffDays === -1) return { emph: "Yesterday", rest: ` · ${monthDay}` };
   return { emph: weekday, rest: ` · ${monthDay}` };
-}
-
-function PickChip({ match, myPick }: { match: Match; myPick: MyPick }) {
-  const pickedCode =
-    myPick.pick === "A"
-      ? match.team_a_code
-      : myPick.pick === "B"
-        ? match.team_b_code
-        : null;
-  const accent = colorFor(pickedCode);
-  const pickFlag =
-    myPick.pick === "A"
-      ? flag(match.team_a_code)
-      : myPick.pick === "B"
-        ? flag(match.team_b_code)
-        : "•";
-  const pickLabel =
-    myPick.pick === "A"
-      ? match.team_a_code ?? "A"
-      : myPick.pick === "B"
-        ? match.team_b_code ?? "B"
-        : "Draw";
-  return (
-    <div
-      className="mc-pick"
-      style={{
-        background: pickedCode ? accent.tint : "var(--paper)",
-        borderLeft: `3px solid ${pickedCode ? accent.primary : "var(--stout-35)"}`,
-        color: accent.ink,
-      }}
-    >
-      <span className="caps-label">Your pick</span>
-      <span className="flag">{pickFlag}</span>
-      <span className="mc-pick-team">{pickLabel}</span>
-      {myPick.stake > 0 ? (
-        <span className="mc-pick-stake tnum">+{myPick.stake} staked</span>
-      ) : null}
-    </div>
-  );
 }
 
 function MatchCard({ match, myPick }: { match: Match; myPick?: MyPick }) {
@@ -140,7 +101,15 @@ function MatchCard({ match, myPick }: { match: Match; myPick?: MyPick }) {
           <span className="flag">{flag(match.team_b_code)}</span>
         </div>
         <div className="meta">{meta}</div>
-        {myPick ? <PickChip match={match} myPick={myPick} /> : null}
+        {myPick ? (
+          <PickPanel
+            teamACode={match.team_a_code}
+            teamBCode={match.team_b_code}
+            pick={myPick.pick}
+            stake={myPick.stake}
+            style={{ marginTop: 10 }}
+          />
+        ) : null}
       </div>
       <svg className="chev" width="16" height="16" viewBox="0 0 24 24" fill="none">
         <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

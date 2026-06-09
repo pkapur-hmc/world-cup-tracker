@@ -9,6 +9,7 @@ import { FLAG_EMOJI } from "@/data/flag-emojis";
 import { colorFor } from "@/data/country-colors";
 import { WccIcon, WcpIcon } from "@/components/ui/CurrencyIcon";
 import { InfoChip } from "@/components/ui/InfoChip";
+import { PickPanel } from "@/components/ui/PickPanel";
 import { HomeInviteCard } from "./HomeInviteCard";
 
 type MyPick = { pick: "A" | "D" | "B"; stake: number } | null;
@@ -113,22 +114,6 @@ function LiveBlock({ match, watching }: { match: Match; watching: number }) {
 }
 
 function NextBlock({ match, myPick }: { match: Match; myPick: MyPick }) {
-  const pickFlag =
-    myPick?.pick === "A"
-      ? flag(match.team_a_code)
-      : myPick?.pick === "B"
-        ? flag(match.team_b_code)
-        : myPick?.pick === "D"
-          ? "•"
-          : "";
-  const pickLabel =
-    myPick?.pick === "A"
-      ? match.team_a_code ?? "A"
-      : myPick?.pick === "B"
-        ? match.team_b_code ?? "B"
-        : myPick?.pick === "D"
-          ? "Draw"
-          : "";
   const pickedCode =
     myPick?.pick === "A"
       ? match.team_a_code
@@ -175,37 +160,13 @@ function NextBlock({ match, myPick }: { match: Match; myPick: MyPick }) {
         </div>
 
         {myPick ? (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 10,
-              marginTop: 12,
-              padding: "10px 12px",
-              background: pickedCode ? "var(--foam-lit)" : "var(--paper)",
-              border: pickedCode ? `1.5px solid ${accent.primary}` : "1px solid var(--stout-12)",
-              borderRadius: "var(--r-md)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span className="caps-label">Your pick</span>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <span className="flag">{pickFlag}</span>
-                <span className="t-sub">{pickLabel}</span>
-              </span>
-            </div>
-            {myPick.stake > 0 ? (
-              <span
-                className="badge stake tnum"
-                style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
-              >
-                <WccIcon size={12} /> {myPick.stake} staked
-              </span>
-            ) : (
-              <span className="t-small muted">no stake</span>
-            )}
-          </div>
+          <PickPanel
+            teamACode={match.team_a_code}
+            teamBCode={match.team_b_code}
+            pick={myPick.pick}
+            stake={myPick.stake}
+            style={{ marginTop: 12 }}
+          />
         ) : null}
 
         <Link

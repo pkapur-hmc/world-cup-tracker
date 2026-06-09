@@ -17,7 +17,7 @@ import { colorFor } from "@/data/country-colors";
 import { PourButton } from "./PourButton";
 import { BeerStampRail } from "./BeerStampRail";
 import { WatchingNow, type WatchingMember } from "./WatchingNow";
-import { PreMatchInteractive } from "./PreMatchInteractive";
+import { PickAndStake } from "./PickAndStake";
 import { WccIcon, WcpIcon } from "@/components/ui/CurrencyIcon";
 
 function flag(code: string | null) {
@@ -523,23 +523,51 @@ async function PreView({
   const my = picks.find((p) => p.userId === userId);
   const isKnockout = match.stage !== "group";
 
+  // Hero takes on the picked country's colors, but only once the pick is
+  // locked (server-confirmed) - not while the user is still tapping sides.
+  const pickedCode =
+    my?.pick === "A"
+      ? match.team_a_code
+      : my?.pick === "B"
+        ? match.team_b_code
+        : null;
+  const accent = colorFor(pickedCode);
+
   return (
     <>
       <MatchAppbar match={match} />
       <div className="screen" style={{ gap: 18 }}>
-        <PreMatchInteractive
-          matchId={match.id}
-          isKnockout={isKnockout}
-          teamACode={match.team_a_code}
-          teamBCode={match.team_b_code}
-          flagA={flag(match.team_a_code)}
-          flagB={flag(match.team_b_code)}
-          availableWcc={stats.wcc}
-          initial={my?.pick ? { pick: my.pick, stake: my.stake } : null}
-          locksAt={match.kickoff_at}
-          hero={<MatchHero match={match} />}
-          groupPicks={<GroupPicksList picks={picks} match={match} />}
-        />
+        <div
+          style={{
+            borderRadius: "var(--r-lg)",
+            padding: "6px 14px 10px",
+            borderLeft: pickedCode ? `4px solid ${accent.primary}` : "4px solid transparent",
+            background: pickedCode ? accent.tint : undefined,
+          }}
+        >
+          <MatchHero match={match} />
+        </div>
+
+        {match.team_a_code && match.team_b_code ? (
+          <PickAndStake
+            matchId={match.id}
+            isKnockout={isKnockout}
+            teamACode={match.team_a_code}
+            teamBCode={match.team_b_code}
+            flagA={flag(match.team_a_code)}
+            flagB={flag(match.team_b_code)}
+            availableWcc={stats.wcc}
+            initial={my?.pick ? { pick: my.pick, stake: my.stake } : null}
+            locksAt={match.kickoff_at}
+          />
+        ) : (
+          <div className="card empty-block" style={{ textAlign: "center" }}>
+            <div className="empty-lead">Not your turn yet.</div>
+            <div className="empty-sub">Knockout picks open after group stage wraps.</div>
+          </div>
+        )}
+
+        <GroupPicksList picks={picks} match={match} />
         <div style={{ height: 16 }} />
       </div>
     </>
