@@ -163,20 +163,20 @@ export default async function SchedulePage({
         </div>
       </div>
 
-      <div className="chip-row">
-        {STAGES.map((s) => (
-          <Link
-            key={s.key || "all"}
-            href={s.key ? `/schedule?stage=${s.key}` : "/schedule"}
-            className={`chip ${activeStage === s.key ? "is-active" : ""}`}
-            style={{ textDecoration: "none" }}
-          >
-            {s.label}
-          </Link>
-        ))}
-      </div>
-
       <div className="screen" style={{ gap: 0 }}>
+        <div className="chip-row">
+          {STAGES.map((s) => (
+            <Link
+              key={s.key || "all"}
+              href={s.key ? `/schedule?stage=${s.key}` : "/schedule"}
+              className={`chip ${activeStage === s.key ? "is-active" : ""}`}
+              style={{ textDecoration: "none" }}
+            >
+              {s.label}
+            </Link>
+          ))}
+        </div>
+
         {dayKeys.length === 0 ? (
           <div className="card empty-block" style={{ textAlign: "center" }}>
             <div className="empty-lead">Nothing scheduled.</div>

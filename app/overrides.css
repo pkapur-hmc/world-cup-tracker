@@ -207,3 +207,26 @@ a,
   border: none;
   animation: skel-pulse 1.2s ease-in-out infinite;
 }
+
+/* loading.tsx pour animation */
+@keyframes ld-fill {
+  0%   { transform: translateY(80px); }
+  85%  { transform: translateY(0); }
+  100% { transform: translateY(0); }
+}
+@keyframes ld-pour {
+  0%        { opacity: 0; transform: translateY(-8px); }
+  10%, 80%  { opacity: 1; transform: translateY(0); }
+  90%, 100% { opacity: 0; transform: translateY(4px); }
+}
+@keyframes ld-trophy {
+  0%, 100% { transform: rotate(-1.5deg) translateY(0); }
+  50%      { transform: rotate( 1.5deg) translateY(-2px); }
+}
+.ld-fill   { animation: ld-fill 2.4s ease-in-out infinite; }
+.ld-pour   { animation: ld-pour 2.4s ease-in-out infinite; transform-origin: 180px 30px; }
+.ld-trophy { animation: ld-trophy 3.6s ease-in-out infinite; transform-origin: 62px 144px; }
+@media (prefers-reduced-motion: reduce) {
+  .ld-fill, .ld-pour, .ld-trophy { animation: none; }
+  .ld-fill { transform: translateY(0); }
+}
