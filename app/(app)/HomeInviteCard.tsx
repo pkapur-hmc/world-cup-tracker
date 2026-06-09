@@ -18,20 +18,21 @@ export function HomeInviteCard({
   const [copied, setCopied] = useState(false);
   const inviteUrl = inviteUrlFor(inviteCode);
 
+  const shareText = `Hop into "${groupName}" - our World Cup 2026 bracket: ${inviteUrl}`;
+
   async function shareOrCopy() {
     try {
       if (typeof navigator !== "undefined" && "share" in navigator) {
         await navigator.share({
           title: `Join ${groupName} on The World Cup Cup`,
-          text: `Hop into "${groupName}" — our World Cup 2026 bracket:`,
-          url: inviteUrl,
+          text: shareText,
         });
         return;
       }
     } catch {
       /* user cancelled or share unsupported, fall through to copy */
     }
-    await navigator.clipboard.writeText(inviteUrl);
+    await navigator.clipboard.writeText(shareText);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }

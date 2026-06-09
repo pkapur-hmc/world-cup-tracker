@@ -10,19 +10,19 @@ export function GroupsList({ groups }: { groups: GroupMembershipSummary[] }) {
 
   async function shareOrCopy(g: GroupMembershipSummary) {
     const url = inviteUrlFor(g.inviteCode);
+    const text = `Hop into "${g.groupName}" - our World Cup 2026 bracket: ${url}`;
     try {
       if (typeof navigator !== "undefined" && "share" in navigator) {
         await navigator.share({
           title: `Join ${g.groupName} on The World Cup Cup`,
-          text: `Hop into "${g.groupName}" — our World Cup 2026 bracket:`,
-          url,
+          text,
         });
         return;
       }
     } catch {
       /* user cancelled, fall through to copy */
     }
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(text);
     setCopiedId(g.groupId);
     setTimeout(() => setCopiedId((c) => (c === g.groupId ? null : c)), 1500);
   }
