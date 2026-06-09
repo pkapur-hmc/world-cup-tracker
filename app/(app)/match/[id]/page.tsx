@@ -83,15 +83,37 @@ function MatchAppbar({ match }: { match: Match }) {
 function TeamChunk({
   code,
   accentTeams = false,
+  picked = false,
+  dimmed = false,
 }: {
   code: string | null;
   accentTeams?: boolean;
+  picked?: boolean;
+  dimmed?: boolean;
 }) {
-  const c = accentTeams && code ? colorFor(code) : null;
+  const c = (accentTeams || picked) && code ? colorFor(code) : null;
   const inner = (
     <>
-      <span className="flag xl">{flag(code)}</span>
-      <span className="t-sub">{code ?? "TBD"}</span>
+      <span className="flag xl" style={picked ? { transform: "scale(1.12)" } : undefined}>
+        {flag(code)}
+      </span>
+      <span className="t-sub" style={picked ? { fontWeight: 800 } : undefined}>
+        {code ?? "TBD"}
+      </span>
+      {picked && c ? (
+        <span
+          className="badge"
+          style={{
+            background: c.primary,
+            color: readableInk(c.primary),
+            fontSize: 9,
+            padding: "2px 8px",
+            marginTop: 2,
+          }}
+        >
+          ✓ Your pick
+        </span>
+      ) : null}
     </>
   );
   const wrapStyle: React.CSSProperties = {
@@ -99,15 +121,26 @@ function TeamChunk({
     flexDirection: "column",
     alignItems: "center",
     gap: 6,
-    ...(c
+    opacity: dimmed ? 0.5 : 1,
+    transition: "opacity 150ms ease",
+    ...(picked && c
       ? {
           background: c.tint,
-          borderBottom: `3px solid ${c.primary}`,
+          border: `2px solid ${c.primary}`,
           borderRadius: "var(--r-md)",
-          padding: "10px 18px",
+          padding: "12px 18px",
+          boxShadow: `0 4px 14px -6px ${c.primary}`,
           color: c.ink,
         }
-      : {}),
+      : c
+        ? {
+            background: c.tint,
+            borderBottom: `3px solid ${c.primary}`,
+            borderRadius: "var(--r-md)",
+            padding: "10px 18px",
+            color: c.ink,
+          }
+        : {}),
   };
   if (!code) {
     return <div style={wrapStyle}>{inner}</div>;
@@ -125,24 +158,44 @@ function TeamChunk({
 function MatchHero({
   match,
   accentTeams = false,
+  pickedSide = null,
 }: {
   match: Match;
   accentTeams?: boolean;
+  pickedSide?: "A" | "D" | "B" | null;
 }) {
+  const aPicked = pickedSide === "A";
+  const bPicked = pickedSide === "B";
+  const hasTeamPick = aPicked || bPicked;
   return (
     <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18 }}>
-        <TeamChunk code={match.team_a_code} accentTeams={accentTeams} />
+        <TeamChunk
+          code={match.team_a_code}
+          accentTeams={accentTeams}
+          picked={aPicked}
+          dimmed={hasTeamPick && !aPicked}
+        />
         {match.status === "live" || match.status === "final" ? (
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
             <span className="t-display tnum">{match.score_a ?? 0}</span>
             <span className="dim" style={{ fontFamily: "var(--ff-display)", fontSize: 24 }}>-</span>
             <span className="t-display tnum">{match.score_b ?? 0}</span>
           </div>
+        ) : pickedSide === "D" ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            <div className="t-display dim" style={{ fontSize: 36 }}>vs</div>
+            <span className="badge stake" style={{ fontSize: 9 }}>✓ Draw</span>
+          </div>
         ) : (
           <div className="t-display dim" style={{ fontSize: 36 }}>vs</div>
         )}
-        <TeamChunk code={match.team_b_code} accentTeams={accentTeams} />
+        <TeamChunk
+          code={match.team_b_code}
+          accentTeams={accentTeams}
+          picked={bPicked}
+          dimmed={hasTeamPick && !bPicked}
+        />
       </div>
       {match.status === "scheduled" ? (
         <>
@@ -545,7 +598,7 @@ async function PreView({
             background: pickedCode ? accent.tint : undefined,
           }}
         >
-          <MatchHero match={match} />
+          <MatchHero match={match} pickedSide={my?.pick ?? null} />
         </div>
 
         {match.team_a_code && match.team_b_code ? (
@@ -635,4 +688,15 @@ function countryName(code: string): string {
     CRO: "Croatia", ENG: "England", GHA: "Ghana", PAN: "Panama",
   };
   return NAMES[code] ?? code;
+}
+
+// Dark or light foreground that reads on a #rrggbb fill (luma check).
+function readableInk(hex: string): string {
+  const h = hex.replace("#", "");
+  if (h.length !== 6) return "#1C140C";
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const luma = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luma > 0.55 ? "#1C140C" : "#FFFEF2";
 }

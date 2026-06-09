@@ -3,6 +3,7 @@ import { getMatchesByDay, type Match } from "@/lib/fixtures";
 import { getCurrentMembership } from "@/lib/membership";
 import { getUserPicksByMatch } from "@/lib/picks";
 import { FLAG_EMOJI } from "@/data/flag-emojis";
+import { colorFor } from "@/data/country-colors";
 import { PickPanel } from "@/components/ui/PickPanel";
 
 type MyPick = { pick: "A" | "D" | "B"; stake: number };
@@ -78,8 +79,26 @@ function MatchCard({ match, myPick }: { match: Match; myPick?: MyPick }) {
 
   const showScore = match.status === "live" || match.status === "final";
 
+  // A bet tints the whole card the picked country's color (exactly like the
+  // home page's "next up" card). Draw picks have no country, so no tint.
+  const pickedCode =
+    myPick?.pick === "A"
+      ? match.team_a_code
+      : myPick?.pick === "B"
+        ? match.team_b_code
+        : null;
+  const accent = colorFor(pickedCode);
+
   return (
-    <Link href={`/match/${match.id}`} className="match-card">
+    <Link
+      href={`/match/${match.id}`}
+      className="match-card"
+      style={
+        pickedCode
+          ? { borderLeft: `4px solid ${accent.primary}`, background: accent.tint }
+          : undefined
+      }
+    >
       <div>
         <div className="mc-top">
           {badge}
