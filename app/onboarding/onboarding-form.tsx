@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { switchGroupAction } from "@/app/(app)/account-actions";
 
 type Mode = "create" | "join";
 
@@ -68,19 +69,44 @@ export function OnboardingForm({
 
     try {
       if (mode === "create") {
-        const { error: rpcError } = await supabase.rpc("create_group", {
+        const { data, error: rpcError } = await supabase.rpc("create_group", {
           group_name: groupName,
           host_display_name: displayName,
         });
         if (rpcError) throw rpcError;
+        // Land on the new bracket's settings so the invite link is one tap
+        // away. The rpc may return the new group id; fall back to the
+        // newest membership row if not.
+        let newGroupId: string | null =
+          typeof data === "string" ? data : ((data as { group_id?: string } | null)?.group_id ?? null);
+        if (!newGroupId) {
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (user) {
+            const { data: rows } = await supabase
+              .from("wc_memberships")
+              .select("group_id, joined_at")
+              .eq("user_id", user.id)
+              .order("joined_at", { ascending: false })
+              .limit(1);
+            newGroupId = (rows?.[0] as { group_id: string } | undefined)?.group_id ?? null;
+          }
+        }
+        if (newGroupId) {
+          await switchGroupAction(newGroupId);
+          router.push(`/group?bracket=${newGroupId}`);
+        } else {
+          router.push("/");
+        }
       } else {
         const { error: rpcError } = await supabase.rpc("accept_invite", {
           invite: inviteCode.trim(),
           member_display_name: displayName,
         });
         if (rpcError) throw rpcError;
+        router.push("/");
       }
-      router.push("/");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
