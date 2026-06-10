@@ -172,7 +172,7 @@ function PreCupWelcome() {
   return (
     <div className="precup-card">
       <Image src="/crest.svg" alt="World Cup Cup" width={88} height={88} priority />
-      <div className="precup-title">Welcome to the Cup</div>
+      <div className="precup-title">Welcome to the World Cup Cup</div>
       <div className="caps-label precup-kickoff">
         First whistle Thursday · kicks off {countdownTo(TOURNAMENT_KICKOFF_ISO)}
       </div>
