@@ -8,7 +8,6 @@ import {
   removeAction,
   renameGroupAction,
   resetCodeAction,
-  updateMyDisplayNameAction,
 } from "./actions";
 import { inviteUrlFor } from "@/lib/origin";
 import { LocalTime } from "@/components/ui/LocalTime";
@@ -26,7 +25,6 @@ export function GroupSettings({
   inviteCode: initialInviteCode,
   members,
   meUserId,
-  meDisplayName,
   meIsHost,
   hostCount,
 }: {
@@ -35,14 +33,12 @@ export function GroupSettings({
   inviteCode: string;
   members: Member[];
   meUserId: string;
-  meDisplayName: string;
   meIsHost: boolean;
   hostCount: number;
 }) {
   const [pending, startTransition] = useTransition();
   const [code, setCode] = useState(initialInviteCode);
   const [groupName, setGroupName] = useState(initialGroupName);
-  const [displayName, setDisplayName] = useState(meDisplayName);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -208,23 +204,9 @@ export function GroupSettings({
           <span className="caps-label">You</span>
         </div>
         <div className="card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div>
-            <div className="caps-label" style={{ marginBottom: 6 }}>Display name</div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input
-                className="input"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-              />
-              <button
-                type="button"
-                className="btn secondary sm"
-                disabled={pending || displayName === meDisplayName || !displayName.trim()}
-                onClick={() => go(() => updateMyDisplayNameAction(groupId, displayName.trim()))}
-              >
-                Save
-              </button>
-            </div>
+          <div className="t-small muted">
+            Your display name &amp; photo are set once for all brackets in{" "}
+            <strong style={{ color: "var(--stout)" }}>Settings → Profile</strong>.
           </div>
           <button
             type="button"

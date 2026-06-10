@@ -59,23 +59,6 @@ export async function renameGroupAction(
   return { ok: true };
 }
 
-export async function updateMyDisplayNameAction(
-  groupId: string,
-  name: string,
-): Promise<{ ok: true } | { error: string }> {
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("update_display_name", {
-    target_group_id: groupId,
-    new_display_name: name,
-  });
-  if (error) return { error: error.message };
-  // Best-effort: mirror into auth metadata so future bracket joins default
-  // to the new name (signup stores it there; onboarding reads it back).
-  await supabase.auth.updateUser({ data: { display_name: name } });
-  revalidatePath("/group");
-  return { ok: true };
-}
-
 export async function leaveGroupAction(
   groupId: string,
 ): Promise<{ ok: true } | { error: string }> {

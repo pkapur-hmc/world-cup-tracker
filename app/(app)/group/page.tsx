@@ -21,21 +21,19 @@ export default async function GroupPage({
   let groupId = me.groupId;
   let groupName = me.groupName;
   let inviteCode = me.inviteCode;
-  let myDisplayName = me.displayName;
   let myRole = me.role;
   let memberCount = me.memberCount;
 
   if (bracket && bracket !== me.groupId) {
     const { data: m } = await supabase
       .from("wc_memberships")
-      .select("group_id, display_name, role, wc_groups(name, invite_code)")
+      .select("group_id, role, wc_groups(name, invite_code)")
       .eq("user_id", me.userId)
       .eq("group_id", bracket)
       .limit(1);
     const row = (m ?? [])[0] as unknown as
       | {
           group_id: string;
-          display_name: string;
           role: "host" | "member";
           wc_groups: { name: string; invite_code: string };
         }
@@ -44,7 +42,6 @@ export default async function GroupPage({
     groupId = row.group_id;
     groupName = row.wc_groups.name;
     inviteCode = row.wc_groups.invite_code;
-    myDisplayName = row.display_name;
     myRole = row.role;
     const { count } = await supabase
       .from("wc_memberships")
@@ -91,7 +88,6 @@ export default async function GroupPage({
             joinedAt: m.joined_at,
           }))}
           meUserId={me.userId}
-          meDisplayName={myDisplayName}
           meIsHost={myRole === "host"}
           hostCount={hostCount}
         />

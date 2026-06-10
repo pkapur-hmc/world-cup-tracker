@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { setAvatarUrlAction } from "@/app/(app)/account-actions";
+import { setAvatarUrlAction, updateDisplayNameAction } from "@/app/(app)/account-actions";
 
 export function AvatarUploader({
   userId,
@@ -18,6 +18,28 @@ export function AvatarUploader({
   const [busy, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [name, setName] = useState(displayName);
+  const [draft, setDraft] = useState(displayName);
+  const [editingName, setEditingName] = useState(false);
+
+  function saveName() {
+    const next = draft.trim();
+    if (!next || next === name) {
+      setEditingName(false);
+      setDraft(name);
+      return;
+    }
+    setErr(null);
+    startTransition(async () => {
+      const res = await updateDisplayNameAction(next);
+      if ("error" in res) {
+        setErr(res.error);
+        return;
+      }
+      setName(next);
+      setEditingName(false);
+    });
+  }
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -80,7 +102,7 @@ export function AvatarUploader({
           />
         ) : (
           <span style={{ fontFamily: "var(--ff-display)", fontSize: 28, fontWeight: 800 }}>
-            {displayName.slice(0, 1).toUpperCase()}
+            {name.slice(0, 1).toUpperCase()}
           </span>
         )}
         <span
@@ -104,17 +126,64 @@ export function AvatarUploader({
         </span>
       </button>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="t-sub" style={{ fontSize: 17 }}>{displayName}</div>
-        <div className="t-small muted">Photo shows in every bracket</div>
-        <button
-          type="button"
-          className="link"
-          onClick={() => fileRef.current?.click()}
-          disabled={busy}
-          style={{ padding: 0, marginTop: 4 }}
-        >
-          {busy ? "Uploading..." : photo ? "Change photo" : "Add a photo"}
-        </button>
+        {editingName ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              className="input"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              maxLength={40}
+              autoFocus
+              disabled={busy}
+              aria-label="Display name"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  saveName();
+                }
+              }}
+              style={{ flex: 1, minWidth: 0 }}
+            />
+            <button
+              type="button"
+              className="btn secondary sm"
+              onClick={saveName}
+              disabled={busy || !draft.trim()}
+            >
+              Save
+            </button>
+          </div>
+        ) : (
+          <div className="t-sub" style={{ fontSize: 17 }}>{name}</div>
+        )}
+        <div className="t-small muted">Name &amp; photo show in every bracket</div>
+        <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+          <button
+            type="button"
+            className="link"
+            onClick={() => fileRef.current?.click()}
+            disabled={busy}
+            style={{ padding: 0 }}
+          >
+            {busy ? "Working..." : photo ? "Change photo" : "Add a photo"}
+          </button>
+          <button
+            type="button"
+            className="link"
+            onClick={() => {
+              if (editingName) {
+                setDraft(name);
+                setEditingName(false);
+              } else {
+                setEditingName(true);
+              }
+            }}
+            disabled={busy}
+            style={{ padding: 0 }}
+          >
+            {editingName ? "Cancel" : "Rename"}
+          </button>
+        </div>
         {err ? (
           <div className="t-small" style={{ color: "var(--penalty)", marginTop: 4 }}>
             {err}

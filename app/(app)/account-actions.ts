@@ -60,6 +60,36 @@ export async function setAvatarUrlAction(
   return { ok: true };
 }
 
+/** Rename the user everywhere: every membership row plus auth metadata
+ *  (signup stores the name there; onboarding/joins read it back). Display
+ *  name is per-user, not per-bracket - Settings is its one home. */
+export async function updateDisplayNameAction(
+  name: string,
+): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "not signed in" };
+
+  const trimmed = name.trim();
+  if (!trimmed) return { error: "Name can't be empty" };
+
+  const { error } = await supabase
+    .from("wc_memberships")
+    .update({ display_name: trimmed })
+    .eq("user_id", user.id);
+  if (error) return { error: error.message };
+
+  await supabase.auth.updateUser({ data: { display_name: trimmed } });
+
+  revalidatePath("/");
+  revalidatePath("/group");
+  revalidatePath("/leaderboard");
+  revalidatePath("/settings");
+  return { ok: true };
+}
+
 export async function signOutAction(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
