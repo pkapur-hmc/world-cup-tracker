@@ -1,7 +1,14 @@
+import Image from "next/image";
 import Link from "next/link";
 import { getAllMemberships, getCurrentMembership, getCrossBracketMembers } from "@/lib/membership";
 import { BracketStandings } from "./BracketStandings";
-import { getLiveMatches, getNextMatch, type Match } from "@/lib/fixtures";
+import {
+  getLiveMatches,
+  getNextMatch,
+  tournamentStarted,
+  TOURNAMENT_KICKOFF_ISO,
+  type Match,
+} from "@/lib/fixtures";
 import { getMemberStats, getRankInGroup } from "@/lib/stats";
 import { getPicksForUsersInMatch, hasUserEverPicked } from "@/lib/picks";
 import { FLAG_EMOJI } from "@/data/flag-emojis";
@@ -152,6 +159,65 @@ function NextUpRow({ match }: { match: Match }) {
       </span>
       <span className="next-up-time tnum">{countdownTo(match.kickoff_at)}</span>
     </Link>
+  );
+}
+
+/**
+ * Pre-tournament home hero, shown until the first real kickoff. The one job:
+ * tell people picks are open NOW and preview the drinking game so Thursday
+ * isn't a surprise. Copy mirrors the HelpSheet (the canonical rules) - if a
+ * number changes there, change it here too.
+ */
+function PreCupWelcome() {
+  return (
+    <div className="precup-card">
+      <Image src="/crest.svg" alt="World Cup Cup" width={88} height={88} priority />
+      <div className="precup-title">Welcome to the Cup</div>
+      <div className="caps-label precup-kickoff">
+        First whistle Thursday · kicks off {countdownTo(TOURNAMENT_KICKOFF_ISO)}
+      </div>
+      <div className="precup-rows">
+        <div className="precup-row">
+          <span className="precup-icon" aria-hidden>🎯</span>
+          <div>
+            <div className="precup-row-lead">Picks are open now</div>
+            <div className="precup-row-sub">
+              Feeling sure about a match? Call the winner whenever you like -
+              picks stay open until that game kicks off. Every right call pays{" "}
+              <strong>+1 WCC</strong>, and once you&apos;re holding cups you can
+              stake them on a pick to multiply the payout.
+            </div>
+          </div>
+        </div>
+        <div className="precup-row">
+          <span className="precup-icon" aria-hidden>🍺</span>
+          <div>
+            <div className="precup-row-lead">Pouring opens at kickoff</div>
+            <div className="precup-row-sub">
+              Any drink logged during a live match: <strong>+1 WCC</strong>. The
+              playing country&apos;s beer - a Modelo while Mexico plays -{" "}
+              <strong>+2 WCC</strong>.
+            </div>
+          </div>
+        </div>
+        <div className="precup-row">
+          <span className="precup-icon" aria-hidden>🛂</span>
+          <div>
+            <div className="precup-row-lead">Stamps build your passport</div>
+            <div className="precup-row-sub">
+              Country beers also stamp your passport. 48 countries to collect
+              between now and the final.
+            </div>
+          </div>
+        </div>
+      </div>
+      <Link href="/schedule" className="btn primary block">
+        Make your first picks
+      </Link>
+      <div className="precup-foot">
+        Full rules any time under the <strong>?</strong> up top.
+      </div>
+    </div>
   );
 }
 
@@ -328,8 +394,15 @@ export default async function HomePage() {
     if (mine?.pick) nextMyPick = { pick: mine.pick, stake: mine.stake };
   }
 
+  // Pre-cup: until the first real whistle the welcome takes the top slot and
+  // replaces HowToWinPanel (it carries the same three verbs with fuller copy).
+  // Deliberately ignores live TEST matches so the state is visible pre-launch.
+  const preCup = !tournamentStarted();
+
   return (
     <div className="screen home-screen">
+      {preCup ? <PreCupWelcome /> : null}
+
       <StatusCard
         wcc={stats.wcc}
         drinks={stats.drinks}
@@ -356,7 +429,7 @@ export default async function HomePage() {
         stamped={stats.stamps > 0}
       />
 
-      <HowToWinPanel />
+      {preCup ? null : <HowToWinPanel />}
 
       {allMemberships.length > 1 ? (
         <BracketStandings

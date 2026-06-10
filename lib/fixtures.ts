@@ -21,6 +21,18 @@ export type Match = {
 const SELECT =
   "id,stage,group_letter,team_a_code,team_b_code,kickoff_at,venue,status,score_a,score_b,winner_code";
 
+/**
+ * First real kickoff of the 2026 tournament (match 537327, MEX vs RSA).
+ * Hardcoded instant rather than a DB read: the TEST rows (ids 900001-3)
+ * carry past kickoffs and live/final statuses, so any "has anything
+ * started yet" query against wc_matches would lie.
+ */
+export const TOURNAMENT_KICKOFF_ISO = "2026-06-11T19:00:00+00:00";
+
+export function tournamentStarted(): boolean {
+  return Date.now() >= new Date(TOURNAMENT_KICKOFF_ISO).getTime();
+}
+
 /** Venue is stored as "Stadium, City". These pull the two halves out. */
 export function venueCity(venue: string | null): string | null {
   if (!venue) return null;
