@@ -16,16 +16,18 @@ export function OnboardingForm({
   const [mode, setMode] = useState<Mode>(initialCode ? "join" : "create");
   const [groupName, setGroupName] = useState("");
   const [inviteCode, setInviteCode] = useState(initialCode);
-  // When the user already has a membership we hide the display-name field
-  // entirely - they keep the name they're already using.
+  // When the user already has a name (from an existing membership or from
+  // signup metadata) we hide the display-name field entirely - the name is
+  // per-user, not per-bracket.
   const [displayName, setDisplayName] = useState(initialDisplayName ?? "");
-  const hasExistingName = !!initialDisplayName;
+  const [hasExistingName, setHasExistingName] = useState(!!initialDisplayName);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  // If the parent doesn't pass initialDisplayName but the user actually has
-  // memberships (e.g. on a deep-linked /onboarding?add=1), fetch one client-side.
+  // If the parent doesn't pass initialDisplayName, resolve one client-side:
+  // signup metadata first (fresh accounts), then any existing membership
+  // (e.g. on a deep-linked /onboarding?add=1).
   useEffect(() => {
     if (initialDisplayName) return;
     let cancelled = false;
@@ -35,6 +37,15 @@ export function OnboardingForm({
         data: { user },
       } = await supabase.auth.getUser();
       if (!user || cancelled) return;
+      const metaName =
+        typeof user.user_metadata?.display_name === "string"
+          ? user.user_metadata.display_name.trim()
+          : "";
+      if (metaName) {
+        setDisplayName(metaName);
+        setHasExistingName(true);
+        return;
+      }
       const { data } = await supabase
         .from("wc_memberships")
         .select("display_name")
@@ -42,7 +53,10 @@ export function OnboardingForm({
         .limit(1);
       if (cancelled) return;
       const name = (data?.[0] as { display_name: string } | undefined)?.display_name;
-      if (name) setDisplayName(name);
+      if (name) {
+        setDisplayName(name);
+        setHasExistingName(true);
+      }
     })();
     return () => {
       cancelled = true;
@@ -133,7 +147,7 @@ export function OnboardingForm({
 
         {hasExistingName ? (
           <div className="t-small muted" style={{ paddingLeft: 2 }}>
-            Joining as <strong style={{ color: "var(--stout)" }}>{displayName}</strong>. Change
+            Playing as <strong style={{ color: "var(--stout)" }}>{displayName}</strong>. Change
             it any time from Settings.
           </div>
         ) : (

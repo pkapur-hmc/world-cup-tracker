@@ -11,6 +11,9 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
   const [mode, setMode] = useState<Mode>("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // Asked once at signup and stored in auth user metadata - it's per-user,
+  // not per-bracket, so onboarding/joins reuse it instead of re-asking.
+  const [displayName, setDisplayName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +27,11 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
     const { error: authError } =
       mode === "sign-in"
         ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password });
+        : await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { display_name: displayName.trim() } },
+          });
 
     if (authError) {
       setBusy(false);
@@ -42,6 +49,20 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {mode === "sign-up" ? (
+        <input
+          className="input"
+          type="text"
+          placeholder="Display name (what friends see)"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          required
+          maxLength={40}
+          autoComplete="nickname"
+          disabled={busy}
+          aria-label="Display name"
+        />
+      ) : null}
       <input
         className="input"
         type="email"

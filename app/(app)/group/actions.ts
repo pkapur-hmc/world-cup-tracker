@@ -69,6 +69,9 @@ export async function updateMyDisplayNameAction(
     new_display_name: name,
   });
   if (error) return { error: error.message };
+  // Best-effort: mirror into auth metadata so future bracket joins default
+  // to the new name (signup stores it there; onboarding reads it back).
+  await supabase.auth.updateUser({ data: { display_name: name } });
   revalidatePath("/group");
   return { ok: true };
 }
