@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { switchGroupAction } from "@/app/(app)/account-actions";
 
 type Mode = "create" | "join";
 
@@ -93,12 +92,7 @@ export function OnboardingForm({
             newGroupId = (rows?.[0] as { group_id: string } | undefined)?.group_id ?? null;
           }
         }
-        if (newGroupId) {
-          await switchGroupAction(newGroupId);
-          router.push(`/group?bracket=${newGroupId}`);
-        } else {
-          router.push("/");
-        }
+        router.push(newGroupId ? `/group?bracket=${newGroupId}` : "/");
       } else {
         const { error: rpcError } = await supabase.rpc("accept_invite", {
           invite: inviteCode.trim(),
