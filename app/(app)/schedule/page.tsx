@@ -81,7 +81,8 @@ function MatchCard({ match, myPick }: { match: Match; myPick?: MyPick }) {
   const city = venueCity(match.venue);
 
   // A bet tints the whole card the picked country's color (exactly like the
-  // home page's "next up" card). Draw picks have no country, so no tint.
+  // home page's "next up" card). A draw pick blends both teams' tints with
+  // dual edge accents - same language as the match page's draw hero.
   const pickedCode =
     myPick?.pick === "A"
       ? match.team_a_code
@@ -89,17 +90,22 @@ function MatchCard({ match, myPick }: { match: Match; myPick?: MyPick }) {
         ? match.team_b_code
         : null;
   const accent = colorFor(pickedCode);
+  const drawPicked = myPick?.pick === "D";
+  const teamAColor = match.team_a_code ? colorFor(match.team_a_code) : null;
+  const teamBColor = match.team_b_code ? colorFor(match.team_b_code) : null;
+
+  const cardStyle: React.CSSProperties | undefined = pickedCode
+    ? { borderLeft: `4px solid ${accent.primary}`, background: accent.tint }
+    : drawPicked && teamAColor && teamBColor
+      ? {
+          borderLeft: `4px solid ${teamAColor.primary}`,
+          borderRight: `4px solid ${teamBColor.primary}`,
+          background: `linear-gradient(90deg, ${teamAColor.tint} 0%, ${teamBColor.tint} 100%)`,
+        }
+      : undefined;
 
   return (
-    <Link
-      href={`/match/${match.id}`}
-      className="match-card"
-      style={
-        pickedCode
-          ? { borderLeft: `4px solid ${accent.primary}`, background: accent.tint }
-          : undefined
-      }
-    >
+    <Link href={`/match/${match.id}`} className="match-card" style={cardStyle}>
       <div>
         <div className="mc-top">
           {badge}

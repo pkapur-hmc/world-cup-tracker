@@ -22,6 +22,18 @@ export function PickPanel({
 }) {
   const pickedCode = pick === "A" ? teamACode : pick === "B" ? teamBCode : null;
   const accent = colorFor(pickedCode);
+  // Draw: split both teams' tints down the middle with dual edge accents,
+  // mirroring the match page's draw hero panel.
+  const teamAColor = teamACode ? colorFor(teamACode) : null;
+  const teamBColor = teamBCode ? colorFor(teamBCode) : null;
+  const drawStyles: React.CSSProperties =
+    pick === "D" && teamAColor && teamBColor
+      ? {
+          background: `linear-gradient(90deg, ${teamAColor.tint} 0%, ${teamAColor.tint} 50%, ${teamBColor.tint} 50%, ${teamBColor.tint} 100%)`,
+          borderLeft: `3px solid ${teamAColor.primary}`,
+          borderRight: `3px solid ${teamBColor.primary}`,
+        }
+      : {};
   const pickFlag =
     pick === "A"
       ? flag(teamACode)
@@ -46,6 +58,7 @@ export function PickPanel({
         background: pickedCode ? "var(--foam-lit)" : "var(--paper)",
         border: pickedCode ? `1.5px solid ${accent.primary}` : "1px solid var(--stout-12)",
         borderRadius: "var(--r-md)",
+        ...drawStyles,
         ...style,
       }}
     >

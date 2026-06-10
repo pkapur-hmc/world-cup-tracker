@@ -86,6 +86,18 @@ function UpcomingHero({ match, myPick }: { match: Match; myPick: MyPick }) {
         ? match.team_b_code
         : null;
   const accent = colorFor(pickedCode);
+  const drawPicked = myPick?.pick === "D";
+  const teamAColor = match.team_a_code ? colorFor(match.team_a_code) : null;
+  const teamBColor = match.team_b_code ? colorFor(match.team_b_code) : null;
+  const cardStyle: React.CSSProperties | undefined = pickedCode
+    ? { borderLeft: `4px solid ${accent.primary}`, background: accent.tint }
+    : drawPicked && teamAColor && teamBColor
+      ? {
+          borderLeft: `4px solid ${teamAColor.primary}`,
+          borderRight: `4px solid ${teamBColor.primary}`,
+          background: `linear-gradient(90deg, ${teamAColor.tint} 0%, ${teamBColor.tint} 100%)`,
+        }
+      : undefined;
   const urgent = isKickoffSoon(match.kickoff_at);
   const tagLabel = myPick
     ? "Locked"
@@ -94,18 +106,7 @@ function UpcomingHero({ match, myPick }: { match: Match; myPick: MyPick }) {
       : "Next up";
 
   return (
-    <Link
-      href={`/match/${match.id}`}
-      className="hero-action upcoming"
-      style={
-        pickedCode
-          ? {
-              borderLeft: `4px solid ${accent.primary}`,
-              background: accent.tint,
-            }
-          : undefined
-      }
-    >
+    <Link href={`/match/${match.id}`} className="hero-action upcoming" style={cardStyle}>
       <div className="hero-tag">
         <span className={`caps-label ${urgent && !myPick ? "urgent" : ""}`}>{tagLabel}</span>
         <span className="hero-tag-meta">
