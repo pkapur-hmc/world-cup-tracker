@@ -20,7 +20,8 @@ export function HelpSheet({ open, onClose }: { open: boolean; onClose: () => voi
       >
         <p>
           The <strong>one currency</strong>. It&apos;s your balance, your score, and what
-          ranks the leaderboard. Earn it by logging drinks during matches.
+          ranks the leaderboard. Earn it by logging drinks during matches and by
+          calling winners.
         </p>
         <ul>
           <li>
