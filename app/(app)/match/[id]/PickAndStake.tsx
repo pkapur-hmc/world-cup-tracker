@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { placePickAction } from "./actions";
+import { useUnsavedPickGuard } from "./UnsavedPickGuard";
 import { WccIcon } from "@/components/ui/CurrencyIcon";
 import { InfoChip } from "@/components/ui/InfoChip";
 import { colorFor } from "@/data/country-colors";
@@ -42,6 +43,7 @@ export function PickAndStake({
   // state (and disable when there's nothing new to submit).
   const [savedPick, setSavedPick] = useState<ExistingPick>(initial);
   const [now, setNow] = useState<number>(() => Date.now());
+  const guard = useUnsavedPickGuard();
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30_000);
@@ -53,6 +55,37 @@ export function PickAndStake({
   const stakeCapped = Math.min(stake, budget);
   const payout = stakeCapped > 0 ? 1 + 2 * stakeCapped : 1;
   const minsToLock = Math.floor((new Date(locksAt).getTime() - now) / 60_000);
+  const locked = minsToLock < 0;
+  const matchesSaved =
+    !!savedPick &&
+    savedPick.pick === pick &&
+    savedPick.stake === stakeCapped;
+  const isDirty = !locked && !!pick && !matchesSaved;
+
+  useEffect(() => {
+    guard?.setDirty(isDirty);
+  }, [guard, isDirty]);
+
+  useEffect(() => {
+    if (!guard) return;
+    guard.registerLockPick(async () => {
+      if (!pick || locked || matchesSaved) return true;
+      setErr(null);
+      const submitted = { pick, stake: stakeCapped };
+      const res = await placePickAction({
+        matchId,
+        pick: submitted.pick,
+        stake: submitted.stake,
+      });
+      if ("error" in res) {
+        setErr(res.error);
+        return false;
+      }
+      setSavedPick(submitted);
+      return true;
+    });
+    return () => guard.registerLockPick(null);
+  }, [guard, pick, stakeCapped, locked, matchesSaved, matchId]);
 
   function submit() {
     if (!pick) {
@@ -71,8 +104,6 @@ export function PickAndStake({
       else setSavedPick(submitted);
     });
   }
-
-  const locked = minsToLock < 0;
 
   function contrastInk(hex: string): string {
     // simple luma check - pick dark text on light bgs, light text on dark
@@ -261,10 +292,6 @@ export function PickAndStake({
       ) : null}
 
       {(() => {
-        const matchesSaved =
-          !!savedPick &&
-          savedPick.pick === pick &&
-          savedPick.stake === stakeCapped;
         const canSubmit = !pending && !locked && !!pick && !matchesSaved;
         const label = pending
           ? "Locking..."

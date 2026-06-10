@@ -18,6 +18,7 @@ import { PourButton } from "./PourButton";
 import { BeerStampRail } from "./BeerStampRail";
 import { WatchingNow, type WatchingMember } from "./WatchingNow";
 import { PickAndStake } from "./PickAndStake";
+import { GuardedMatchAppbar, UnsavedPickProvider } from "./UnsavedPickGuard";
 import { PickPanel } from "@/components/ui/PickPanel";
 import { LocalTime } from "@/components/ui/LocalTime";
 import { WccIcon } from "@/components/ui/CurrencyIcon";
@@ -601,8 +602,8 @@ async function PreView({
   }
 
   return (
-    <>
-      <MatchAppbar match={match} />
+    <UnsavedPickProvider>
+      <GuardedMatchAppbar match={match} />
       <div className="screen" style={{ gap: 18 }}>
         <div style={heroWrapStyle}>
           <MatchHero match={match} pickedSide={my?.pick ?? null} />
@@ -630,7 +631,7 @@ async function PreView({
         <GroupPicksList picks={picks} match={match} />
         <div style={{ height: 16 }} />
       </div>
-    </>
+    </UnsavedPickProvider>
   );
 }
 
