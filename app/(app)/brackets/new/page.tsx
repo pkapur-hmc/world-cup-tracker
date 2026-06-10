@@ -17,9 +17,12 @@ export default async function NewBracketPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/welcome");
 
+  // Scope to the signed-in user: RLS exposes bracket-mates' membership rows
+  // too, so an unfiltered limit(1) can return someone else's name.
   const { data: memberships } = await supabase
     .from("wc_memberships")
     .select("display_name")
+    .eq("user_id", user.id)
     .limit(1);
   const existingDisplayName =
     (memberships?.[0] as { display_name?: string } | undefined)?.display_name;

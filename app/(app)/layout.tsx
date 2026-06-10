@@ -17,6 +17,7 @@ export default async function AppLayout({
   const { data: memberships } = await supabase
     .from("wc_memberships")
     .select("group_id")
+    .eq("user_id", user.id)
     .limit(1);
   if (!memberships || memberships.length === 0) redirect("/onboarding");
 

@@ -26,8 +26,9 @@ export function OnboardingForm({
   const router = useRouter();
 
   // If the parent doesn't pass initialDisplayName, resolve one client-side:
-  // signup metadata first (fresh accounts), then any existing membership
-  // (e.g. on a deep-linked /onboarding?add=1).
+  // an existing membership first (the live name others already see - renames
+  // touch memberships, so this is the source of truth), then signup metadata
+  // (fresh accounts with no brackets yet).
   useEffect(() => {
     if (initialDisplayName) return;
     let cancelled = false;
@@ -37,22 +38,18 @@ export function OnboardingForm({
         data: { user },
       } = await supabase.auth.getUser();
       if (!user || cancelled) return;
-      const metaName =
-        typeof user.user_metadata?.display_name === "string"
-          ? user.user_metadata.display_name.trim()
-          : "";
-      if (metaName) {
-        setDisplayName(metaName);
-        setHasExistingName(true);
-        return;
-      }
       const { data } = await supabase
         .from("wc_memberships")
         .select("display_name")
         .eq("user_id", user.id)
         .limit(1);
       if (cancelled) return;
-      const name = (data?.[0] as { display_name: string } | undefined)?.display_name;
+      const memberName = (data?.[0] as { display_name: string } | undefined)?.display_name;
+      const metaName =
+        typeof user.user_metadata?.display_name === "string"
+          ? user.user_metadata.display_name.trim()
+          : "";
+      const name = memberName || metaName;
       if (name) {
         setDisplayName(name);
         setHasExistingName(true);
