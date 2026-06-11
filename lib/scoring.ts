@@ -6,21 +6,30 @@
  *   WCC = basic drinks (1 each) + country beers (2 each)
  *         - sum(stakes) + sum(payout_wcc from refunds)
  *         + sum(payout_wcp from won picks)
+ *         + 5 per completed country passport
  *   stamps = distinct country_codes ever drunk (lifetime, not per-group)
  *
  * Country-beer multiplier: tracking a country-specific beer is harder and more
  * intentional than just tapping +1, so it's worth twice as much WCC.
+ *
+ * Passport bonus: stamping EVERY beer on a country's curated list completes
+ * that country's passport and pays a one-time +5 WCC. Per country, lifetime,
+ * derived - mirror any rule change in scripts/007 (place_pick budget).
  *
  * Picks: stake WCC on a side; a correct pick pays 1 + 2*stake WCC (the stake
  * itself is spent). The winnings live in the `payout_wcp` column - the name
  * predates the single-currency merge, but the value is plain WCC.
  */
 
+import { COUNTRY_BEERS } from "@/data/country-beers";
+
 export const COUNTRY_BEER_WCC = 2;
+export const PASSPORT_COMPLETE_WCC = 5;
 
 export type DrinkRow = {
   match_id: number | null;
   country_code: string | null;
+  beer_label: string | null;
 };
 
 export type PickRow = {
@@ -36,15 +45,37 @@ export type MemberStats = {
   drinks: number;
   wcc: number;
   stamps: number;
+  /** Countries whose passport is complete (every listed beer stamped). */
+  passports: number;
 };
 
 export function drinksCount(drinks: DrinkRow[]): number {
   return drinks.length;
 }
 
-/** The single WCC number: earned from drinks, minus stakes spent, plus refunds
- *  and pick winnings. Doubles as the spendable balance and the leaderboard
- *  score. */
+/** Country codes whose passport is complete: every beer on the country's
+ *  curated list has been stamped at least once. Labels are matched within
+ *  their own country (beer names repeat across countries - Brahma, Skol...). */
+export function completedPassports(drinks: DrinkRow[]): Set<string> {
+  const labelsByCountry = new Map<string, Set<string>>();
+  for (const d of drinks) {
+    if (!d.country_code || !d.beer_label) continue;
+    const s = labelsByCountry.get(d.country_code) ?? new Set<string>();
+    s.add(d.beer_label);
+    labelsByCountry.set(d.country_code, s);
+  }
+  const done = new Set<string>();
+  for (const [code, labels] of labelsByCountry) {
+    const list = COUNTRY_BEERS[code];
+    if (!list || list.length === 0) continue;
+    if (list.every((b) => labels.has(b.name))) done.add(code);
+  }
+  return done;
+}
+
+/** The single WCC number: earned from drinks, minus stakes spent, plus refunds,
+ *  pick winnings, and passport-completion bonuses. Doubles as the spendable
+ *  balance and the leaderboard score. */
 export function wccTotal(drinks: DrinkRow[], picks: PickRow[]): number {
   const earned = drinks.reduce(
     (s, d) => s + (d.country_code ? COUNTRY_BEER_WCC : 1),
@@ -53,7 +84,8 @@ export function wccTotal(drinks: DrinkRow[], picks: PickRow[]): number {
   const stakesSpent = picks.reduce((s, p) => s + p.stake, 0);
   const refunds = picks.reduce((s, p) => s + p.payout_wcc, 0);
   const winnings = picks.reduce((s, p) => s + p.payout_wcp, 0);
-  return earned - stakesSpent + refunds + winnings;
+  const passportBonus = completedPassports(drinks).size * PASSPORT_COMPLETE_WCC;
+  return earned - stakesSpent + refunds + winnings + passportBonus;
 }
 
 export function stampSet(drinks: DrinkRow[]): Set<string> {
@@ -70,6 +102,7 @@ export function computeMemberStats(
     drinks: drinksCount(drinks),
     wcc: wccTotal(drinks, picks),
     stamps: stampSet(drinks).size,
+    passports: completedPassports(drinks).size,
   };
 }
 

@@ -268,7 +268,9 @@ export default async function TeamPage({
             <span className="caps-label" style={{ display: "inline-flex", alignItems: "center" }}>
               🛂 Passport stamps
               <InfoChip label="What are stamps?">
-                One stamp per <strong>distinct {name} beer</strong> you&apos;ve ever logged. Collect them all and complete this country.
+                One stamp per <strong>distinct {name} beer</strong> you&apos;ve ever logged.
+                Stamp all {allBeers.length || "of them"} and the completed passport pays a{" "}
+                <strong>+5 WCC bonus</strong>.
               </InfoChip>
             </span>
             <span className="t-small muted tnum">
@@ -289,7 +291,7 @@ export default async function TeamPage({
                 background: "var(--paper)",
                 borderRadius: 999,
                 overflow: "hidden",
-                marginBottom: 14,
+                marginBottom: 8,
               }}
             >
               <div
@@ -302,6 +304,37 @@ export default async function TeamPage({
                 }}
               />
             </div>
+
+            {/* Passport-bonus status line */}
+            {allBeers.length > 0 ? (
+              stampedCount >= allBeers.length ? (
+                <div
+                  className="t-small"
+                  style={{
+                    marginBottom: 14,
+                    padding: "6px 10px",
+                    background: "var(--pour)",
+                    border: "1.5px solid var(--stout)",
+                    borderRadius: "var(--r-md)",
+                    color: "var(--stout)",
+                    fontWeight: 700,
+                  }}
+                >
+                  ✓ Passport complete · +5 WCC earned
+                </div>
+              ) : (
+                <div className="t-small" style={{ marginBottom: 14, color: "var(--stout-70)" }}>
+                  {allBeers.length - stampedCount === 1 ? (
+                    <strong style={{ color: "var(--burn)" }}>1 more stamp for the +5 WCC bonus</strong>
+                  ) : (
+                    <>
+                      Stamp all {allBeers.length} for a{" "}
+                      <strong style={{ color: "var(--burn)" }}>+5 WCC bonus</strong>
+                    </>
+                  )}
+                </div>
+              )
+            ) : null}
 
             {/* Stamp grid */}
             <div

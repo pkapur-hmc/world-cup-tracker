@@ -45,6 +45,14 @@ export function BeerStampRail({
   const totalThisMatch = Object.values(counts).reduce((a, b) => a + b, 0);
   const accent = colorFor(countryCode);
 
+  // Passport progress: a beer is stamped if it was ever logged (lifetime) or
+  // was just logged in this session. Stamping the whole list = +5 WCC bonus.
+  const stampedCount = beers.filter(
+    (b) => claimedNames.has(b.name) || (counts[b.name] ?? 0) > 0,
+  ).length;
+  const passportComplete = beers.length > 0 && stampedCount === beers.length;
+  const stampsToGo = beers.length - stampedCount;
+
   function bumpUp(beer: CountryBeer) {
     setErr(null);
     setBusy(beer.name);
@@ -100,9 +108,13 @@ export function BeerStampRail({
           <div>
             <div className="cbl-title">{countryName} beers</div>
             <div className="cbl-sub">
-              {totalThisMatch > 0
-                ? `${totalThisMatch} logged · +${totalThisMatch * 2} WCC 🛂`
-                : "+2 WCC + 🛂 stamp each"}
+              {passportComplete
+                ? "🛂 Passport complete · +5 WCC earned"
+                : stampsToGo === 1
+                  ? `🛂 ${stampedCount}/${beers.length} stamped · 1 more for +5 WCC!`
+                  : totalThisMatch > 0
+                    ? `${totalThisMatch} logged · 🛂 ${stampedCount}/${beers.length} toward +5`
+                    : `+2 WCC each · stamp all ${beers.length} for +5`}
             </div>
           </div>
         </div>
@@ -133,6 +145,70 @@ export function BeerStampRail({
             Tap + to log a drink, − to remove.{" "}
             <strong>Each {countryName} beer is worth 2 WCC.</strong>
           </div>
+
+          {/* Passport meter: stamp the whole list -> +5 WCC */}
+          {passportComplete ? (
+            <div
+              style={{
+                marginTop: 8,
+                padding: "8px 12px",
+                background: "var(--pour)",
+                border: "1.5px solid var(--stout)",
+                borderRadius: "var(--r-md)",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                color: "var(--stout)",
+              }}
+            >
+              <span aria-hidden style={{ fontSize: 18 }}>🛂</span>
+              <span className="t-sub" style={{ fontSize: 14 }}>
+                Passport complete! <strong>+5 WCC</strong> earned
+              </span>
+            </div>
+          ) : (
+            <div style={{ marginTop: 8 }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                  gap: 8,
+                }}
+              >
+                <span className="t-small" style={{ fontWeight: 700 }}>
+                  🛂 Passport · {stampedCount} of {beers.length} stamped
+                </span>
+                <span className="t-small" style={{ fontWeight: 700, color: "var(--burn)" }}>
+                  {stampsToGo === 1 ? "1 more for +5 WCC!" : `all ${beers.length} = +5 WCC`}
+                </span>
+              </div>
+              <div
+                style={{
+                  marginTop: 5,
+                  height: 6,
+                  borderRadius: 999,
+                  background: "var(--foam-lit)",
+                  border: `1px solid ${accent.secondary}`,
+                  overflow: "hidden",
+                }}
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={beers.length}
+                aria-valuenow={stampedCount}
+                aria-label={`${countryName} passport progress`}
+              >
+                <div
+                  style={{
+                    width: `${beers.length === 0 ? 0 : Math.round((stampedCount / beers.length) * 100)}%`,
+                    height: "100%",
+                    background: accent.primary,
+                    transition: "width 300ms ease",
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
         {beers.map((b) => {
           const c = counts[b.name] ?? 0;

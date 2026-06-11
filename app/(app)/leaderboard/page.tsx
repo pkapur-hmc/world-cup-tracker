@@ -49,7 +49,7 @@ export default async function LeaderboardPage({
     memberIds.length
       ? supabase
           .from("wc_drinks")
-          .select("user_id, match_id, country_code")
+          .select("user_id, match_id, country_code, beer_label")
           .in("user_id", memberIds)
       : Promise.resolve({ data: [] }),
     memberIds.length
@@ -64,7 +64,7 @@ export default async function LeaderboardPage({
   for (const d of (drinks ?? []) as DrinkRow[] & { user_id: string }[]) {
     const u = (d as { user_id: string }).user_id;
     const arr = drinksByUser.get(u) ?? [];
-    arr.push({ match_id: d.match_id, country_code: d.country_code });
+    arr.push({ match_id: d.match_id, country_code: d.country_code, beer_label: d.beer_label });
     drinksByUser.set(u, arr);
   }
 

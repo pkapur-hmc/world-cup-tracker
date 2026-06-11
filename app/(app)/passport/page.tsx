@@ -118,8 +118,13 @@ export default async function PassportPage() {
   );
   const fillPct = totalBeers === 0 ? 0 : Math.round((claimedTotal / totalBeers) * 100);
 
+  const isComplete = (p: CountryProgress) =>
+    p.totalBeers > 0 && p.claimedBeers >= p.totalBeers;
+  const completed = Array.from(progressByCode.values())
+    .filter(isComplete)
+    .sort((a, b) => (b.mostRecentAt ?? "").localeCompare(a.mostRecentAt ?? ""));
   const claimed = Array.from(progressByCode.values())
-    .filter((p) => p.claimedBeers > 0)
+    .filter((p) => p.claimedBeers > 0 && !isComplete(p))
     .sort(
       (a, b) =>
         (b.mostRecentAt ?? "").localeCompare(a.mostRecentAt ?? "") ||
@@ -138,7 +143,7 @@ export default async function PassportPage() {
             {claimedTotal} <span className="muted">of {totalBeers}</span>
           </div>
           <div className="t-small muted" style={{ marginTop: 2 }}>
-            {claimed.length} of {progressByCode.size} countries started ·{" "}
+            {claimed.length + completed.length} of {progressByCode.size} countries started ·{" "}
             {Array.from(progressByCode.values()).reduce((s, p) => s + p.pours, 0)} total pours
           </div>
           <div className="pp-progress" style={{ marginTop: 8 }}>
@@ -156,11 +161,52 @@ export default async function PassportPage() {
       </div>
 
       <div className="screen" style={{ gap: 14 }}>
+        {/* The mechanic, stated where it lives: complete a country = +5 WCC. */}
+        <div
+          className="card"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            background: "var(--bubble)",
+            border: "1.5px dashed var(--burn)",
+            padding: "12px 14px",
+          }}
+        >
+          <span aria-hidden style={{ fontSize: 24, lineHeight: 1 }}>🛂</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="t-sub" style={{ fontSize: 14 }}>
+              Stamp every beer on a country&apos;s list → <strong style={{ color: "var(--burn)" }}>+5 WCC</strong>
+            </div>
+            <div className="t-small muted" style={{ marginTop: 1 }}>
+              {completed.length > 0
+                ? `${completed.length} passport${completed.length === 1 ? "" : "s"} completed · +${completed.length * 5} WCC banked`
+                : "Each completed country passport pays a bonus, on top of the +2 per beer."}
+            </div>
+          </div>
+        </div>
+
         {claimedTotal === 0 ? (
           <div className="card empty-block" style={{ textAlign: "center" }}>
             <div className="empty-lead">Fresh booklet.</div>
             <div className="empty-sub">
               Pour a country beer during their match to stamp it.
+            </div>
+          </div>
+        ) : null}
+
+        {completed.length > 0 ? (
+          <div>
+            <div className="section-label">
+              <span className="caps-label">✓ Completed · {completed.length}</span>
+              <span className="t-small" style={{ color: "var(--burn)", fontWeight: 700 }}>
+                +{completed.length * 5} WCC earned
+              </span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {completed.map((p) => (
+                <CountryStampCard key={p.code} progress={p} />
+              ))}
             </div>
           </div>
         ) : null}
@@ -213,6 +259,8 @@ function CountryStampCard({ progress }: { progress: CountryProgress }) {
   const accent = colorFor(progress.code);
   const allBeers = COUNTRY_BEERS[progress.code] ?? [];
   const pct = progress.totalBeers === 0 ? 0 : Math.round((progress.claimedBeers / progress.totalBeers) * 100);
+  const complete = progress.totalBeers > 0 && progress.claimedBeers >= progress.totalBeers;
+  const oneToGo = !complete && progress.totalBeers - progress.claimedBeers === 1;
 
   return (
     <Link
@@ -255,21 +303,45 @@ function CountryStampCard({ progress }: { progress: CountryProgress }) {
               <> · last <LocalTime iso={progress.mostRecentAt} mode="dateShort" /></>
             ) : null}
           </div>
+          {oneToGo ? (
+            <div className="t-small" style={{ color: "var(--burn)", fontWeight: 700, marginTop: 2 }}>
+              1 stamp from +5 WCC
+            </div>
+          ) : null}
         </div>
-        <span
-          style={{
-            background: accent.primary,
-            color: readableInk(accent.primary),
-            padding: "4px 10px",
-            borderRadius: 999,
-            fontFamily: "var(--ff-display)",
-            fontWeight: 800,
-            fontSize: 14,
-            letterSpacing: "-0.01em",
-          }}
-        >
-          {pct}%
-        </span>
+        {complete ? (
+          <span
+            style={{
+              background: "var(--pour)",
+              color: "var(--stout)",
+              border: "1.5px solid var(--stout)",
+              padding: "4px 10px",
+              borderRadius: 999,
+              fontFamily: "var(--ff-display)",
+              fontWeight: 800,
+              fontSize: 13,
+              letterSpacing: "-0.01em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            ✓ +5 WCC
+          </span>
+        ) : (
+          <span
+            style={{
+              background: accent.primary,
+              color: readableInk(accent.primary),
+              padding: "4px 10px",
+              borderRadius: 999,
+              fontFamily: "var(--ff-display)",
+              fontWeight: 800,
+              fontSize: 14,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {pct}%
+          </span>
+        )}
       </div>
 
       {/* Mini-stamp grid */}

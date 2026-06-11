@@ -31,6 +31,10 @@ export function HelpSheet({ open, onClose }: { open: boolean; onClose: () => voi
             <strong>Country beer</strong> (Modelo while Mexico plays, etc.): <strong>+2 WCC</strong>{" "}
             and a passport stamp 🛂
           </li>
+          <li>
+            <strong>Complete a passport</strong> - stamp every beer on one country&apos;s
+            list: <strong>+5 WCC</strong> bonus (per country!)
+          </li>
         </ul>
         <p className="muted">Sit on your pile, or stake it on picks to win more.</p>
       </Section>

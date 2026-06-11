@@ -44,10 +44,10 @@ async function fetchDrinks(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("wc_drinks")
-    .select("match_id,country_code")
+    .select("match_id,country_code,beer_label")
     .eq("user_id", userId);
   if (error) {
-    if (/country_code/i.test(error.message)) {
+    if (/country_code|beer_label/i.test(error.message)) {
       const { data: data2, error: err2 } = await supabase
         .from("wc_drinks")
         .select("match_id")
@@ -56,6 +56,7 @@ async function fetchDrinks(
       return (data2 ?? []).map((d) => ({
         match_id: d.match_id as number | null,
         country_code: null,
+        beer_label: null,
       }));
     }
     throw error;

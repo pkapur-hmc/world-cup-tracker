@@ -227,9 +227,9 @@ function HowToWinPanel() {
     <div className="how-to-win">
       <div className="how-to-win-title">How to Win</div>
       <div className="how-to-win-sub">
-        Stack <WccIcon size={12} /> WCC three ways
+        Stack <WccIcon size={12} /> WCC four ways
       </div>
-      <div className="three-verbs">
+      <div className="three-verbs" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
         <div className="verb">
           <span className="verb-icon" aria-hidden>🍺</span>
           <div className="verb-name">Drink</div>
@@ -244,6 +244,11 @@ function HowToWinPanel() {
           <span className="verb-icon" aria-hidden>🛂</span>
           <div className="verb-name">Stamp</div>
           <div className="verb-reward">+2 + flag</div>
+        </div>
+        <div className="verb">
+          <span className="verb-icon" aria-hidden>📔</span>
+          <div className="verb-name">Collect</div>
+          <div className="verb-reward">+5 a country</div>
         </div>
       </div>
     </div>

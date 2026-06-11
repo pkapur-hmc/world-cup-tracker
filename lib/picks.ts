@@ -169,17 +169,25 @@ export async function getUserBeerCountsForMatch(
   return counts;
 }
 
-/** Country-beer drinks a user has done lifetime (for the stamp picker). */
-export async function getUserStampedBeers(userId: string): Promise<Set<string>> {
+/** Country-beer drinks a user has done lifetime, keyed by country (for the
+ *  stamp picker + passport progress). Per-country because beer names repeat
+ *  across countries (Brahma, Skol, Heineken...) - a Brazil Brahma must not
+ *  read as an Argentina stamp. */
+export async function getUserStampedBeers(
+  userId: string,
+): Promise<Map<string, Set<string>>> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("wc_drinks")
-    .select("beer_label")
+    .select("country_code, beer_label")
     .eq("user_id", userId)
     .not("beer_label", "is", null);
-  const s = new Set<string>();
-  for (const d of (data ?? []) as { beer_label: string | null }[]) {
-    if (d.beer_label) s.add(d.beer_label);
+  const byCountry = new Map<string, Set<string>>();
+  for (const d of (data ?? []) as { country_code: string | null; beer_label: string | null }[]) {
+    if (!d.country_code || !d.beer_label) continue;
+    const s = byCountry.get(d.country_code) ?? new Set<string>();
+    s.add(d.beer_label);
+    byCountry.set(d.country_code, s);
   }
-  return s;
+  return byCountry;
 }

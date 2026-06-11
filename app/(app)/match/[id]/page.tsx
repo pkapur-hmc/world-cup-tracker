@@ -526,7 +526,7 @@ async function LiveView({
             countryName={countryName(match.team_a_code)}
             flag={flag(match.team_a_code)}
             beers={beersA}
-            claimedNames={stampedBeers}
+            claimedNames={stampedBeers.get(match.team_a_code) ?? new Set()}
             matchCounts={beerCounts}
           />
         ) : null}
@@ -538,7 +538,7 @@ async function LiveView({
             countryName={countryName(match.team_b_code)}
             flag={flag(match.team_b_code)}
             beers={beersB}
-            claimedNames={stampedBeers}
+            claimedNames={stampedBeers.get(match.team_b_code) ?? new Set()}
             matchCounts={beerCounts}
           />
         ) : null}
