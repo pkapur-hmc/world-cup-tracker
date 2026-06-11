@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentMembership } from "@/lib/membership";
-import { getMatchesForTeam, type Match } from "@/lib/fixtures";
+import { getMatchesForTeam, matchPhase, type Match } from "@/lib/fixtures";
 import { createClient } from "@/lib/supabase/server";
 import { FLAG_EMOJI } from "@/data/flag-emojis";
 import { COUNTRY_BEERS, type CountryBeer } from "@/data/country-beers";
@@ -185,9 +185,13 @@ export default async function TeamPage({
     },
   );
 
-  const live = matches.filter((m) => m.status === "live");
-  const upcoming = matches.filter((m) => m.status === "scheduled");
-  const played = matches.filter((m) => m.status === "final");
+  const live = matches.filter((m) => matchPhase(m) === "live");
+  const upcoming = matches.filter(
+    (m) => m.status === "scheduled" && matchPhase(m) === "pre",
+  );
+  const played = matches.filter(
+    (m) => m.status === "final" || (matchPhase(m) === "post" && m.status !== "postponed"),
+  );
   const postponed = matches.filter((m) => m.status === "postponed");
 
   return (
@@ -695,7 +699,7 @@ export default async function TeamPage({
                       {result}
                     </span>
                   ) : null}
-                  {(m.status === "final" || m.status === "live") && m.score_a != null && m.score_b != null ? (
+                  {(m.status === "final" || matchPhase(m) === "live") && m.score_a != null && m.score_b != null ? (
                     <span className="t-sub tnum" style={{ minWidth: 36, textAlign: "right" }}>
                       {m.score_a}-{m.score_b}
                     </span>

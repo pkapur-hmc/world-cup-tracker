@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import type { Match } from "@/lib/fixtures";
+import { matchPhase } from "@/lib/match-phase";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 
 type LockPickFn = () => Promise<boolean>;
@@ -169,7 +170,7 @@ export function GuardedMatchAppbar({ match }: { match: Match }) {
           {stageLabel} · M{match.id}
         </div>
       </div>
-      {match.status === "live" ? (
+      {matchPhase(match) === "live" ? (
         <span className="badge live">
           <span className="dot" />
           Live

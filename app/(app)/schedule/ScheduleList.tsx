@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import type { Match } from "@/lib/fixtures";
+import { matchPhase } from "@/lib/match-phase";
 import { FLAG_EMOJI } from "@/data/flag-emojis";
 import { colorFor } from "@/data/country-colors";
 import { PickPanel } from "@/components/ui/PickPanel";
@@ -52,9 +53,11 @@ function MatchCard({ item }: { item: ScheduleItem }) {
   const tA = match.team_a_code ?? "TBD";
   const tB = match.team_b_code ?? "TBD";
 
+  const phase = matchPhase(match);
+
   let badge: React.ReactNode;
   let meta: string;
-  if (match.status === "live") {
+  if (phase === "live") {
     badge = (
       <span className="badge live">
         <span className="dot" />
@@ -68,6 +71,9 @@ function MatchCard({ item }: { item: ScheduleItem }) {
   } else if (match.status === "postponed") {
     badge = <span className="badge final">Postponed</span>;
     meta = "rescheduling";
+  } else if (phase === "post") {
+    badge = <span className="badge final">Ended</span>;
+    meta = "ended";
   } else {
     badge = (
       <span className="badge time">
@@ -82,7 +88,7 @@ function MatchCard({ item }: { item: ScheduleItem }) {
       ? `Group ${match.group_letter ?? ""}`
       : match.stage.toUpperCase();
 
-  const showScore = match.status === "live" || match.status === "final";
+  const showScore = phase === "live" || match.status === "final";
 
   // A bet tints the whole card the picked country's color (exactly like the
   // home page's "next up" card). A draw pick blends both teams' tints with

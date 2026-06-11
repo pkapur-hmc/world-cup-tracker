@@ -3,6 +3,9 @@
  * Everything else (routes, components, leaderboard math) calls through here.
  */
 import { createClient } from "@/lib/supabase/server";
+import { matchPhase, LIVE_WINDOW_MS } from "@/lib/match-phase";
+
+export { matchPhase, LIVE_WINDOW_MS, type MatchPhase } from "@/lib/match-phase";
 
 export type Match = {
   id: number;
@@ -45,15 +48,23 @@ export function venueStadium(venue: string | null): string | null {
   return i === -1 ? venue : venue.slice(0, i);
 }
 
+/** Every match that is live right now (by time), in kickoff order. Independent
+ *  of the feed's status flag so the live loop opens at kickoff, not whenever
+ *  football-data gets around to flipping IN_PLAY. */
 export async function getLiveMatches(): Promise<Match[]> {
   const supabase = await createClient();
+  const now = Date.now();
+  const lowerIso = new Date(now - LIVE_WINDOW_MS).toISOString();
+  const nowIso = new Date(now).toISOString();
   const { data, error } = await supabase
     .from("wc_matches")
     .select(SELECT)
-    .eq("status", "live")
+    .lte("kickoff_at", nowIso)
+    .gte("kickoff_at", lowerIso)
+    .not("status", "in", "(final,postponed)")
     .order("kickoff_at");
   if (error) throw error;
-  return (data ?? []) as Match[];
+  return ((data ?? []) as Match[]).filter((m) => matchPhase(m) === "live");
 }
 
 export async function getNextMatch(): Promise<Match | null> {

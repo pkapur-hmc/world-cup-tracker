@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getMatchById, type Match } from "@/lib/fixtures";
+import { getMatchById, matchPhase, type Match } from "@/lib/fixtures";
 import { BackButton } from "@/components/ui/BackButton";
 import { getCurrentMembership, getCrossBracketMembers } from "@/lib/membership";
 import { getMemberStats } from "@/lib/stats";
@@ -51,7 +51,7 @@ function MatchAppbar({ match }: { match: Match }) {
           {stageLabel} · M{match.id}
         </div>
       </div>
-      {match.status === "live" ? (
+      {matchPhase(match) === "live" ? (
         <span className="badge live">
           <span className="dot" />
           Live
@@ -151,6 +151,7 @@ function MatchHero({
   const hasTeamPick = aPicked || bPicked;
   const teamAColor = match.team_a_code ? colorFor(match.team_a_code) : null;
   const teamBColor = match.team_b_code ? colorFor(match.team_b_code) : null;
+  const phase = matchPhase(match);
   return (
     <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18 }}>
@@ -160,7 +161,7 @@ function MatchHero({
           picked={aPicked}
           dimmed={hasTeamPick && !aPicked}
         />
-        {match.status === "live" || match.status === "final" ? (
+        {phase === "live" || match.status === "final" ? (
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
             <span className="t-display tnum">{match.score_a ?? 0}</span>
             <span className="dim" style={{ fontFamily: "var(--ff-display)", fontSize: 24 }}>-</span>
@@ -214,7 +215,7 @@ function MatchHero({
           dimmed={hasTeamPick && !bPicked}
         />
       </div>
-      {match.status === "scheduled" ? (
+      {phase === "pre" && match.status === "scheduled" ? (
         <>
           <div className="t-h1 tnum" style={{ marginTop: 18 }}>{countdownTo(match.kickoff_at)}</div>
           <div className="t-sub" style={{ marginTop: 6 }}>
@@ -227,7 +228,7 @@ function MatchHero({
       {match.venue ? (
         <div
           className="t-small muted"
-          style={{ marginTop: match.status === "scheduled" ? 2 : 6 }}
+          style={{ marginTop: phase === "pre" ? 2 : 6 }}
         >
           {match.venue}
         </div>
@@ -417,14 +418,14 @@ export default async function MatchPage({
   ]);
   if (!match || !member) notFound();
 
-  // Branch by status.
-  if (match.status === "live") {
+  // Branch by phase (time-driven, not the feed's status flag - see matchPhase).
+  const phase = matchPhase(match);
+  if (phase === "live") {
     return <LiveView match={match} userId={member.userId} />;
   }
-  if (match.status === "final") {
+  if (phase === "post") {
     return <PostView match={match} userId={member.userId} />;
   }
-  // scheduled / postponed
   return <PreView match={match} userId={member.userId} />;
 }
 

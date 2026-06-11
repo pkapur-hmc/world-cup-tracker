@@ -420,7 +420,7 @@ export default async function HomePage() {
       />
 
       {liveMatches.length > 0 ? (
-        <LiveHero match={liveMatches[0]} />
+        liveMatches.map((m) => <LiveHero key={m.id} match={m} />)
       ) : nextMatch ? (
         <UpcomingHero match={nextMatch} myPick={nextMyPick} />
       ) : (
