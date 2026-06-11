@@ -172,3 +172,21 @@ export async function fetchAllMatches(apiKey: string): Promise<FdMatch[]> {
   const data = (await res.json()) as FdMatchesResponse;
   return data.matches;
 }
+
+/**
+ * Single-match endpoint. The bulk competition feed omits score.fullTime
+ * (stays null even on FINISHED matches - observed MEX/RSA 2026-06-11), while
+ * this endpoint carries the real score. v4 returns the match object directly.
+ */
+export async function fetchMatch(apiKey: string, id: number): Promise<FdMatch> {
+  const res = await fetch(`${BASE_URL}/matches/${id}`, {
+    headers: { "X-Auth-Token": apiKey },
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(
+      `football-data ${res.status}: ${res.statusText} - ${await res.text()}`,
+    );
+  }
+  return (await res.json()) as FdMatch;
+}
