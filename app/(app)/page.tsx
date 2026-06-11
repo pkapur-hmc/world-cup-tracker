@@ -10,7 +10,7 @@ import {
   type Match,
 } from "@/lib/fixtures";
 import { getMemberStats, getRankInGroup } from "@/lib/stats";
-import { getPicksForUsersInMatch, hasUserEverPicked } from "@/lib/picks";
+import { getPicksForUsersInMatch, getUserPicksByMatch, hasUserEverPicked } from "@/lib/picks";
 import { FLAG_EMOJI } from "@/data/flag-emojis";
 import { colorFor } from "@/data/country-colors";
 import { WccIcon } from "@/components/ui/CurrencyIcon";
@@ -50,9 +50,32 @@ function stageLabel(match: Match) {
   return match.group_letter ? `Group ${match.group_letter}` : match.stage.toUpperCase();
 }
 
-function LiveHero({ match }: { match: Match }) {
+function LiveHero({ match, myPick }: { match: Match; myPick: MyPick }) {
+  // Same pick treatment as UpcomingHero - a picked live match wears the
+  // country's colors and shows the locked pick, so the panels read as one
+  // family. The live identity (badge, score, "tap to log" CTA) rides on top.
+  const pickedCode =
+    myPick?.pick === "A"
+      ? match.team_a_code
+      : myPick?.pick === "B"
+        ? match.team_b_code
+        : null;
+  const accent = colorFor(pickedCode);
+  const drawPicked = myPick?.pick === "D";
+  const teamAColor = match.team_a_code ? colorFor(match.team_a_code) : null;
+  const teamBColor = match.team_b_code ? colorFor(match.team_b_code) : null;
+  const cardStyle: React.CSSProperties | undefined = pickedCode
+    ? { borderLeft: `4px solid ${accent.primary}`, background: accent.tint }
+    : drawPicked && teamAColor && teamBColor
+      ? {
+          borderLeft: `4px solid ${teamAColor.primary}`,
+          borderRight: `4px solid ${teamBColor.primary}`,
+          background: `linear-gradient(90deg, ${teamAColor.tint} 0%, ${teamBColor.tint} 100%)`,
+        }
+      : undefined;
+
   return (
-    <Link href={`/match/${match.id}`} className="hero-action live">
+    <Link href={`/match/${match.id}`} className="hero-action live" style={cardStyle}>
       <div className="hero-tag">
         <span className="badge live"><span className="dot" />Live</span>
         <span className="hero-tag-meta">{stageLabel(match)}</span>
@@ -64,6 +87,15 @@ function LiveHero({ match }: { match: Match }) {
         <span className="t-display tnum">{match.score_b ?? 0}</span>
         <span className="flag lg">{flag(match.team_b_code)}</span>
       </div>
+      {myPick ? (
+        <PickPanel
+          teamACode={match.team_a_code}
+          teamBCode={match.team_b_code}
+          pick={myPick.pick}
+          stake={myPick.stake}
+          style={{ marginTop: 2 }}
+        />
+      ) : null}
       <div className="hero-cta">
         <span className="hero-cta-icon" aria-hidden>🍺</span>
         <div>
@@ -375,7 +407,7 @@ export default async function HomePage() {
   const inMultiple = allMemberships.length > 1;
   const soloBracket = inMultiple ? null : allMemberships[0] ?? null;
 
-  const [liveMatches, nextMatch, stats, crossBracketMembers, everPicked, soloRank] = await Promise.all([
+  const [liveMatches, nextMatch, stats, crossBracketMembers, everPicked, soloRank, livePicks] = await Promise.all([
     getLiveMatches(),
     getNextMatch(),
     getMemberStats("", member.userId),
@@ -384,6 +416,7 @@ export default async function HomePage() {
     soloBracket
       ? getRankInGroup(soloBracket.groupId, member.userId)
       : Promise.resolve(null),
+    getUserPicksByMatch(member.userId),
   ]);
 
   let nextMyPick: MyPick = null;
@@ -409,6 +442,18 @@ export default async function HomePage() {
     <div className="screen home-screen">
       {preCup ? <PreCupWelcome /> : null}
 
+      {/* A live match is the most time-sensitive thing on the page, so the
+          live cluster (now + what's next) leads, above the cup balance.
+          With nothing live, the cup leads and the next match sits under it. */}
+      {liveMatches.length > 0 ? (
+        <>
+          {liveMatches.map((m) => (
+            <LiveHero key={m.id} match={m} myPick={livePicks.get(m.id) ?? null} />
+          ))}
+          {nextMatch ? <NextUpRow match={nextMatch} /> : null}
+        </>
+      ) : null}
+
       <StatusCard
         wcc={stats.wcc}
         drinks={stats.drinks}
@@ -419,15 +464,13 @@ export default async function HomePage() {
         bracketCount={allMemberships.length}
       />
 
-      {liveMatches.length > 0 ? (
-        liveMatches.map((m) => <LiveHero key={m.id} match={m} />)
-      ) : nextMatch ? (
-        <UpcomingHero match={nextMatch} myPick={nextMyPick} />
-      ) : (
-        <EmptyDay />
-      )}
-
-      {liveMatches.length > 0 && nextMatch ? <NextUpRow match={nextMatch} /> : null}
+      {liveMatches.length === 0 ? (
+        nextMatch ? (
+          <UpcomingHero match={nextMatch} myPick={nextMyPick} />
+        ) : (
+          <EmptyDay />
+        )
+      ) : null}
 
       <OnboardingChecklist
         picked={everPicked}

@@ -483,11 +483,40 @@ async function LiveView({
     isYou: p.userId === userId,
   }));
 
+  // The live hero wears the picked country's colors, exactly like a picked
+  // pre-match hero - so the pick stays front and center once it's locked.
+  const pickedCode =
+    myPick?.pick === "A"
+      ? match.team_a_code
+      : myPick?.pick === "B"
+        ? match.team_b_code
+        : null;
+  const accent = colorFor(pickedCode);
+  const drawPicked = myPick?.pick === "D";
+  const teamAColor = match.team_a_code ? colorFor(match.team_a_code) : null;
+  const teamBColor = match.team_b_code ? colorFor(match.team_b_code) : null;
+  const heroWrapStyle: React.CSSProperties = {
+    borderRadius: "var(--r-lg)",
+    padding: "6px 14px 10px",
+  };
+  if (pickedCode) {
+    heroWrapStyle.borderLeft = `4px solid ${accent.primary}`;
+    heroWrapStyle.background = accent.tint;
+  } else if (drawPicked && teamAColor && teamBColor) {
+    heroWrapStyle.borderLeft = `4px solid ${teamAColor.primary}`;
+    heroWrapStyle.borderRight = `4px solid ${teamBColor.primary}`;
+    heroWrapStyle.background = `linear-gradient(90deg, ${teamAColor.tint} 0%, ${teamBColor.tint} 100%)`;
+  } else {
+    heroWrapStyle.borderLeft = "4px solid transparent";
+  }
+
   return (
     <>
       <MatchAppbar match={match} />
       <div className="screen" style={{ paddingBottom: 92, gap: 16 }}>
-        <MatchHero match={match} accentTeams />
+        <div style={heroWrapStyle}>
+          <MatchHero match={match} pickedSide={myPick?.pick ?? null} />
+        </div>
 
         {myPick?.pick ? (
           <PickPanel
