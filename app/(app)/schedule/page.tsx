@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getMatchesList, venueCity, type Match } from "@/lib/fixtures";
+import { getMatchesList, matchPhase, venueCity, type Match } from "@/lib/fixtures";
 import { getCurrentMembership } from "@/lib/membership";
 import { getUserPicksByMatch } from "@/lib/picks";
 import { ScheduleList, type MyPick, type ScheduleItem } from "./ScheduleList";
@@ -28,11 +28,15 @@ export default async function SchedulePage({
     member ? getUserPicksByMatch(member.userId) : Promise.resolve(new Map<number, MyPick>()),
   ]);
 
-  const items: ScheduleItem[] = matches.map((match) => ({
-    match,
-    myPick: picksByMatch.get(match.id) ?? null,
-    city: venueCity(match.venue),
-  }));
+  // The schedule is forward-looking: once a match ends it drops off here.
+  // Per-match results/beer history live on the team/country page instead.
+  const items: ScheduleItem[] = matches
+    .filter((match) => matchPhase(match) !== "post")
+    .map((match) => ({
+      match,
+      myPick: picksByMatch.get(match.id) ?? null,
+      city: venueCity(match.venue),
+    }));
 
   return (
     <>
