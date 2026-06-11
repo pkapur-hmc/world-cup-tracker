@@ -31,12 +31,28 @@ export function HelpSheet({ open, onClose }: { open: boolean; onClose: () => voi
             <strong>Country beer</strong> (Modelo while Mexico plays, etc.): <strong>+2 WCC</strong>{" "}
             and a passport stamp 🛂
           </li>
-          <li>
-            <strong>Complete a passport</strong> - stamp every beer on one country&apos;s
-            list: <strong>+5 WCC</strong> bonus (per country!)
-          </li>
         </ul>
         <p className="muted">Sit on your pile, or stake it on picks to win more.</p>
+      </Section>
+
+      <Section title={<>🛂 Passport bonuses</>}>
+        <p>
+          Your stamps stack into two bonuses - one for going <strong>wide</strong>,
+          one for going <strong>deep</strong>:
+        </p>
+        <ul>
+          <li>
+            🌍 <strong>Breadth</strong> - stamp a beer from <strong>5 different
+            countries</strong>: <strong>+5 WCC</strong>, and again every 5 after that
+          </li>
+          <li>
+            🏅 <strong>Depth</strong> - stamp <strong>every</strong> beer on one
+            country&apos;s list: <strong>+5 WCC</strong>, per country
+          </li>
+        </ul>
+        <p className="muted">
+          Both are on top of the +2 per beer. Track it all on the Passport tab.
+        </p>
       </Section>
 
       <Section title={<>🎯 Picks &amp; stakes</>}>

@@ -1,14 +1,16 @@
 -- ============================================================
--- World Cup Cup - passport-completion bonus
+-- World Cup Cup - passport bonuses (depth + breadth)
 --
--- New mechanic: stamping EVERY beer on a country's curated list (drinking
--- each distinct beer at least once, lifetime) completes that country's
--- passport and pays a +5 WCC bonus. Per country - complete Mexico AND Brazil
--- and you've banked +10. Flat +5 regardless of list size.
+-- Two new WCC bonuses, both derived from raw wc_drinks rows in the app
+-- (lib/scoring.ts), so no data migration is needed and prior progress counts:
+--   - DEPTH:   stamp EVERY beer on a country's curated list -> +5 WCC, per
+--              country (complete Mexico AND Brazil = +10). Flat regardless of
+--              list size.
+--   - BREADTH: +5 WCC for every 5 distinct countries you've stamped at least
+--              once (a width incentive to counterweight deep completion).
 --
--- The app derives the bonus from raw wc_drinks rows (lib/scoring.ts), so no
--- data migration is needed and prior completions count automatically. This
--- script keeps the SERVER's stake budget in agreement:
+-- This script keeps the SERVER's stake budget in agreement (the depth bonus
+-- needs to know each country's list size; breadth is pure count):
 --
 --   1. wc_passport_requirements: how many distinct beers each country's list
 --      has. Seeded from data/country-beers.ts - regenerate if that file's
@@ -121,7 +123,8 @@ begin
   --   earned    = all basic drinks + 2 * country beers
   --   spent     = sum(stake) on picks for OTHER matches
   --   settled   = refunds (payout_wcc) + winnings (payout_wcp)
-  --   passports = +5 per country whose full beer list has been stamped
+  --   depth     = +5 per country whose full beer list has been stamped
+  --   breadth   = +5 for every 5 distinct countries stamped
   select
     (select count(*) filter (where country_code is null)
         + 2 * count(*) filter (where country_code is not null)
@@ -144,6 +147,12 @@ begin
         group by d.country_code, r.beer_count
        having count(distinct d.beer_label) >= r.beer_count
      ) completed)
+    +
+    (select ((count(distinct country_code) / 5) * 5)::int
+       from public.wc_drinks
+       where user_id = auth.uid()
+         and country_code is not null
+         and beer_label is not null)
   into available_wcc;
 
   if stake_value > available_wcc then

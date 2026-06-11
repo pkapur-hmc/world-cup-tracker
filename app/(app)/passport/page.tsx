@@ -7,6 +7,7 @@ import { COUNTRY_BEERS } from "@/data/country-beers";
 import { colorFor } from "@/data/country-colors";
 import { CountryBottle } from "@/components/ui/CountryBottle";
 import { LocalTime } from "@/components/ui/LocalTime";
+import { PassportBonuses } from "./PassportBonuses";
 
 type Stamp = {
   country_code: string;
@@ -134,6 +135,8 @@ export default async function PassportPage() {
     .filter((p) => p.claimedBeers === 0)
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  const countriesStamped = claimed.length + completed.length;
+
   return (
     <>
       <div className="appbar" style={{ alignItems: "flex-start" }}>
@@ -161,30 +164,7 @@ export default async function PassportPage() {
       </div>
 
       <div className="screen" style={{ gap: 14 }}>
-        {/* The mechanic, stated where it lives: complete a country = +5 WCC. */}
-        <div
-          className="card"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            background: "var(--bubble)",
-            border: "1.5px dashed var(--burn)",
-            padding: "12px 14px",
-          }}
-        >
-          <span aria-hidden style={{ fontSize: 24, lineHeight: 1 }}>🛂</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="t-sub" style={{ fontSize: 14 }}>
-              Stamp every beer on a country&apos;s list → <strong style={{ color: "var(--burn)" }}>+5 WCC</strong>
-            </div>
-            <div className="t-small muted" style={{ marginTop: 1 }}>
-              {completed.length > 0
-                ? `${completed.length} passport${completed.length === 1 ? "" : "s"} completed · +${completed.length * 5} WCC banked`
-                : "Each completed country passport pays a bonus, on top of the +2 per beer."}
-            </div>
-          </div>
-        </div>
+        <PassportBonuses countriesStamped={countriesStamped} completedCount={completed.length} />
 
         {claimedTotal === 0 ? (
           <div className="card empty-block" style={{ textAlign: "center" }}>

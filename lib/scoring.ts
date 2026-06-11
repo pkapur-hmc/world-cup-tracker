@@ -6,15 +6,18 @@
  *   WCC = basic drinks (1 each) + country beers (2 each)
  *         - sum(stakes) + sum(payout_wcc from refunds)
  *         + sum(payout_wcp from won picks)
- *         + 5 per completed country passport
+ *         + 5 per completed country passport (depth)
+ *         + 5 for every 5 distinct countries stamped (breadth)
  *   stamps = distinct country_codes ever drunk (lifetime, not per-group)
  *
  * Country-beer multiplier: tracking a country-specific beer is harder and more
  * intentional than just tapping +1, so it's worth twice as much WCC.
  *
- * Passport bonus: stamping EVERY beer on a country's curated list completes
- * that country's passport and pays a one-time +5 WCC. Per country, lifetime,
- * derived - mirror any rule change in scripts/007 (place_pick budget).
+ * Passport bonuses (both lifetime, both derived - mirror any rule change in
+ * scripts/007, place_pick budget):
+ *   - depth:   stamp EVERY beer on a country's list -> +5 WCC, per country.
+ *   - breadth: every 5 distinct countries you've stamped -> +5 WCC. Rewards
+ *              exploring widely as a counterweight to completing one deeply.
  *
  * Picks: stake WCC on a side; a correct pick pays 1 + 2*stake WCC (the stake
  * itself is spent). The winnings live in the `payout_wcp` column - the name
@@ -25,6 +28,8 @@ import { COUNTRY_BEERS } from "@/data/country-beers";
 
 export const COUNTRY_BEER_WCC = 2;
 export const PASSPORT_COMPLETE_WCC = 5;
+export const PASSPORT_BREADTH_EVERY = 5; // countries per breadth milestone
+export const PASSPORT_BREADTH_WCC = 5; // WCC per milestone
 
 export type DrinkRow = {
   match_id: number | null;
@@ -73,9 +78,14 @@ export function completedPassports(drinks: DrinkRow[]): Set<string> {
   return done;
 }
 
+/** Breadth bonus: +5 WCC for every 5 distinct countries stamped. */
+export function breadthBonus(countriesStamped: number): number {
+  return Math.floor(countriesStamped / PASSPORT_BREADTH_EVERY) * PASSPORT_BREADTH_WCC;
+}
+
 /** The single WCC number: earned from drinks, minus stakes spent, plus refunds,
- *  pick winnings, and passport-completion bonuses. Doubles as the spendable
- *  balance and the leaderboard score. */
+ *  pick winnings, and passport bonuses (depth + breadth). Doubles as the
+ *  spendable balance and the leaderboard score. */
 export function wccTotal(drinks: DrinkRow[], picks: PickRow[]): number {
   const earned = drinks.reduce(
     (s, d) => s + (d.country_code ? COUNTRY_BEER_WCC : 1),
@@ -84,8 +94,9 @@ export function wccTotal(drinks: DrinkRow[], picks: PickRow[]): number {
   const stakesSpent = picks.reduce((s, p) => s + p.stake, 0);
   const refunds = picks.reduce((s, p) => s + p.payout_wcc, 0);
   const winnings = picks.reduce((s, p) => s + p.payout_wcp, 0);
-  const passportBonus = completedPassports(drinks).size * PASSPORT_COMPLETE_WCC;
-  return earned - stakesSpent + refunds + winnings + passportBonus;
+  const depthBonus = completedPassports(drinks).size * PASSPORT_COMPLETE_WCC;
+  const breadth = breadthBonus(stampSet(drinks).size);
+  return earned - stakesSpent + refunds + winnings + depthBonus + breadth;
 }
 
 export function stampSet(drinks: DrinkRow[]): Set<string> {
