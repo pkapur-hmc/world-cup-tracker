@@ -80,24 +80,17 @@ export async function getMatchById(id: number): Promise<Match | null> {
   return data as Match | null;
 }
 
-/** All matches grouped by UTC day. Useful for the Schedule page. */
-export async function getMatchesByDay(
+/** All matches in chronological (kickoff) order. The Schedule page buckets
+ *  these into day sections in the viewer's local timezone, client-side. */
+export async function getMatchesList(
   stage?: Match["stage"],
-): Promise<Map<string, Match[]>> {
+): Promise<Match[]> {
   const supabase = await createClient();
   let q = supabase.from("wc_matches").select(SELECT).order("kickoff_at");
   if (stage) q = q.eq("stage", stage);
   const { data, error } = await q;
   if (error) throw error;
-
-  const byDay = new Map<string, Match[]>();
-  for (const m of (data ?? []) as Match[]) {
-    const day = m.kickoff_at.slice(0, 10);
-    const arr = byDay.get(day) ?? [];
-    arr.push(m);
-    byDay.set(day, arr);
-  }
-  return byDay;
+  return (data ?? []) as Match[];
 }
 
 /** Matches a user might still need a pick on (scheduled, kickoff in the future). */
