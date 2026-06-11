@@ -109,12 +109,12 @@ export function BeerStampRail({
             <div className="cbl-title">{countryName} beers</div>
             <div className="cbl-sub">
               {passportComplete
-                ? "🛂 Passport complete · +5 WCC earned"
+                ? `🛂 ${countryName} passport complete · +5 WCC`
                 : stampsToGo === 1
-                  ? `🛂 ${stampedCount}/${beers.length} stamped · 1 more for +5 WCC!`
+                  ? `🛂 ${stampedCount}/${beers.length} collected · 1 more, any match = +5 WCC!`
                   : totalThisMatch > 0
-                    ? `${totalThisMatch} logged · 🛂 ${stampedCount}/${beers.length} toward +5`
-                    : `+2 WCC each · stamp all ${beers.length} for +5`}
+                    ? `+${totalThisMatch * 2} WCC now · 🛂 ${stampedCount}/${beers.length} collected so far`
+                    : `+2 WCC each · collect all ${beers.length} across any match = +5`}
             </div>
           </div>
         </div>
@@ -142,8 +142,9 @@ export function BeerStampRail({
           }}
         >
           <div className="t-small">
-            Tap + to log a drink, − to remove.{" "}
-            <strong>Each {countryName} beer is worth 2 WCC.</strong>
+            Tap + to log, − to remove. Each is <strong>+2 WCC</strong>. Your passport
+            keeps every {countryName} beer you log — across <strong>any match, all
+            tournament</strong>, so there&apos;s no rush to finish the list tonight.
           </div>
 
           {/* Passport meter: stamp the whole list -> +5 WCC */}
@@ -177,10 +178,10 @@ export function BeerStampRail({
                 }}
               >
                 <span className="t-small" style={{ fontWeight: 700 }}>
-                  🛂 Passport · {stampedCount} of {beers.length} stamped
+                  🛂 Your {countryName} passport · {stampedCount}/{beers.length}
                 </span>
                 <span className="t-small" style={{ fontWeight: 700, color: "var(--burn)" }}>
-                  {stampsToGo === 1 ? "1 more for +5 WCC!" : `all ${beers.length} = +5 WCC`}
+                  {stampsToGo === 1 ? "1 more = +5 WCC!" : `all ${beers.length} = +5 WCC`}
                 </span>
               </div>
               <div
@@ -207,30 +208,48 @@ export function BeerStampRail({
                   }}
                 />
               </div>
+              <div className="t-small" style={{ marginTop: 5, opacity: 0.75 }}>
+                Collected across every match — pick these off whenever {countryName} plays.
+              </div>
             </div>
           )}
         </div>
         {beers.map((b) => {
           const c = counts[b.name] ?? 0;
-          const stamped = claimedNames.has(b.name) || c > 0;
+          const stampedBefore = claimedNames.has(b.name);
+          const stampedNow = c > 0;
+          // Three states make the cross-match collection obvious: already in
+          // your passport from another game, freshly stamped tonight, or not
+          // yet collected.
+          const stampNote = stampedNow
+            ? stampedBefore
+              ? "🛂 in your passport · +1 tonight"
+              : "🛂 new stamp!"
+            : stampedBefore
+              ? "🛂 collected earlier"
+              : null;
           const findHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`"${b.name}" near me`)}`;
           return (
             <div
               key={b.name}
               className="sheet-confirm-row"
               style={{
-                background: c > 0 ? accent.tint2 : "var(--foam-lit)",
-                borderLeft: `3px solid ${c > 0 ? accent.primary : "transparent"}`,
-                borderRight: c > 0 ? `1px solid ${accent.secondary}` : undefined,
+                background: stampedNow ? accent.tint2 : stampedBefore ? accent.tint : "var(--foam-lit)",
+                borderLeft: `3px solid ${stampedNow ? accent.primary : stampedBefore ? accent.secondary : "transparent"}`,
+                borderRight: stampedNow ? `1px solid ${accent.secondary}` : undefined,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
                 <CountryBottle countryCode={countryCode} flag={flag} size={48} />
                 <div style={{ minWidth: 0 }}>
                   <div className="t-sub" style={{ fontSize: 15 }}>{b.name}</div>
+                  {stampNote ? (
+                    <div className="t-small" style={{ fontWeight: 700, color: accent.ink }}>
+                      {stampNote}
+                    </div>
+                  ) : null}
                   <div className="t-small muted">
                     {b.style}
-                    {stamped ? " · 🛂 stamped" : ""}
                     {" · "}
                     <a
                       href={findHref}

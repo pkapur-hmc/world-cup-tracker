@@ -155,13 +155,18 @@ function MatchHero({
   const phase = matchPhase(match);
   return (
     <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18 }}>
-        <TeamChunk
-          code={match.team_a_code}
-          accentTeams={accentTeams}
-          picked={aPicked}
-          dimmed={hasTeamPick && !aPicked}
-        />
+      {/* 1fr auto 1fr keeps the score dead-center even when one team wears the
+          wider "your pick" box - equal side columns, score in the middle. */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 10 }}>
+        <div style={{ justifySelf: "end", minWidth: 0 }}>
+          <TeamChunk
+            code={match.team_a_code}
+            accentTeams={accentTeams}
+            picked={aPicked}
+            dimmed={hasTeamPick && !aPicked}
+          />
+        </div>
+        <div style={{ justifySelf: "center" }}>
         {phase === "live" || match.status === "final" ? (
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
             <span className="t-display tnum">{match.score_a ?? 0}</span>
@@ -209,12 +214,15 @@ function MatchHero({
         ) : (
           <div className="t-display dim" style={{ fontSize: 36 }}>vs</div>
         )}
-        <TeamChunk
-          code={match.team_b_code}
-          accentTeams={accentTeams}
-          picked={bPicked}
-          dimmed={hasTeamPick && !bPicked}
-        />
+        </div>
+        <div style={{ justifySelf: "start", minWidth: 0 }}>
+          <TeamChunk
+            code={match.team_b_code}
+            accentTeams={accentTeams}
+            picked={bPicked}
+            dimmed={hasTeamPick && !bPicked}
+          />
+        </div>
       </div>
       {phase === "pre" && match.status === "scheduled" ? (
         <>
