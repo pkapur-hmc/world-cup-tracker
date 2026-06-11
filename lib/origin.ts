@@ -23,3 +23,17 @@ export function inviteUrlFor(code: string): string {
   const origin = appOrigin();
   return origin ? `${origin}/join/${code}` : `/join/${code}`;
 }
+
+/** The full invite message used by every share/copy surface. Includes the
+ *  link AND the raw code, since the deep link doesn't always open (some
+ *  in-app browsers / link previews swallow it) - the code is the reliable
+ *  fallback: open the app, Join with code, paste. */
+export function inviteShareText(groupName: string, code: string): string {
+  return [
+    `Hop into "${groupName}" - our World Cup Cup bracket for the 2026 tournament.`,
+    ``,
+    `Tap to join: ${inviteUrlFor(code)}`,
+    ``,
+    `Link not working? Open the app, tap "Join with code", and paste: ${code}`,
+  ].join("\n");
+}

@@ -9,7 +9,7 @@ import {
   renameGroupAction,
   resetCodeAction,
 } from "./actions";
-import { inviteUrlFor } from "@/lib/origin";
+import { inviteUrlFor, inviteShareText } from "@/lib/origin";
 import { LocalTime } from "@/components/ui/LocalTime";
 
 type Member = {
@@ -39,6 +39,7 @@ export function GroupSettings({
   const [pending, startTransition] = useTransition();
   const [code, setCode] = useState(initialInviteCode);
   const [groupName, setGroupName] = useState(initialGroupName);
+  const [copied, setCopied] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -84,13 +85,20 @@ export function GroupSettings({
         <div className="t-small muted" style={{ marginTop: 8, textAlign: "center", wordBreak: "break-all" }}>
           {inviteUrl}
         </div>
+        <div className="t-small muted" style={{ marginTop: 8, textAlign: "center" }}>
+          Link not opening for someone? They can join with the code above.
+        </div>
         <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
           <button
             type="button"
             className="btn secondary block"
-            onClick={() => navigator.clipboard.writeText(inviteUrl)}
+            onClick={() => {
+              navigator.clipboard.writeText(inviteShareText(groupName, code));
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            }}
           >
-            Copy link
+            {copied ? "Copied!" : "Copy invite"}
           </button>
           {meIsHost ? (
             <button

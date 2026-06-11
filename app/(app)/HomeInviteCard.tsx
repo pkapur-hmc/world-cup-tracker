@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { inviteUrlFor } from "@/lib/origin";
+import { inviteShareText } from "@/lib/origin";
 
 /**
  * Home-page invite card. One-tap "Copy invite link" with the group's code
@@ -16,9 +16,7 @@ export function HomeInviteCard({
   groupName: string;
 }) {
   const [copied, setCopied] = useState(false);
-  const inviteUrl = inviteUrlFor(inviteCode);
-
-  const shareText = `Hop into "${groupName}" - our World Cup 2026 bracket: ${inviteUrl}`;
+  const shareText = inviteShareText(groupName, inviteCode);
 
   async function shareOrCopy() {
     try {
