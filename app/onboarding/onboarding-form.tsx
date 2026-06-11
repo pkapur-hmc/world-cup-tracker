@@ -13,7 +13,9 @@ export function OnboardingForm({
 }) {
   const search = useSearchParams();
   const initialCode = search.get("code")?.trim() ?? "";
-  const [mode, setMode] = useState<Mode>(initialCode ? "join" : "create");
+  // Default to "join" - most people arrive with a friend's code. An explicit
+  // ?code deep link still lands on join too; "create" is the deliberate path.
+  const [mode, setMode] = useState<Mode>("join");
   const [groupName, setGroupName] = useState("");
   const [inviteCode, setInviteCode] = useState(initialCode);
   // When the user already has a name (from an existing membership or from
@@ -121,19 +123,19 @@ export function OnboardingForm({
       >
         <button
           type="button"
-          onClick={() => setMode("create")}
-          className={`btn ${mode === "create" ? "primary" : "ghost"} sm`}
-          style={{ flex: 1 }}
-        >
-          Create bracket
-        </button>
-        <button
-          type="button"
           onClick={() => setMode("join")}
           className={`btn ${mode === "join" ? "primary" : "ghost"} sm`}
           style={{ flex: 1 }}
         >
           Join with code
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("create")}
+          className={`btn ${mode === "create" ? "primary" : "ghost"} sm`}
+          style={{ flex: 1 }}
+        >
+          Create bracket
         </button>
       </div>
 
