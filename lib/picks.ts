@@ -123,6 +123,31 @@ export async function getDrinksForUsersInMatch(
   return counts;
 }
 
+/** Per-match earnings for a set of users: raw drink count and WCC, where a
+ *  country beer is worth 2 WCC and a basic drink 1. Powers the live "your
+ *  people" panel, which ranks by WCC (the currency that matters), not raw
+ *  drink count. */
+export async function getMatchEarningsForUsers(
+  userIds: string[],
+  matchId: number,
+): Promise<Map<string, { drinks: number; wcc: number }>> {
+  const out = new Map<string, { drinks: number; wcc: number }>();
+  if (userIds.length === 0) return out;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("wc_drinks")
+    .select("user_id, country_code")
+    .in("user_id", userIds)
+    .eq("match_id", matchId);
+  for (const d of (data ?? []) as { user_id: string; country_code: string | null }[]) {
+    const cur = out.get(d.user_id) ?? { drinks: 0, wcc: 0 };
+    cur.drinks += 1;
+    cur.wcc += d.country_code ? 2 : 1;
+    out.set(d.user_id, cur);
+  }
+  return out;
+}
+
 /** Currently-watching user_ids (presence pings in the last 5 min), restricted
  *  to the supplied user set. */
 export async function getWatchingForUsersInMatch(

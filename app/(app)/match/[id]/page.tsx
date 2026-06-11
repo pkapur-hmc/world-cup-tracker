@@ -7,6 +7,7 @@ import { getMemberStats } from "@/lib/stats";
 import {
   getPicksForUsersInMatch,
   getDrinksForUsersInMatch,
+  getMatchEarningsForUsers,
   getWatchingForUsersInMatch,
   getUserStampedBeers,
   getUserBeerCountsForMatch,
@@ -446,17 +447,17 @@ async function LiveView({
     role: m.role,
   }));
   const memberIds = crossBracketMembers.map((m) => m.userId);
-  const [stats, picks, drinkCounts, watching, stampedBeers, beerCounts] = await Promise.all([
+  const [stats, picks, earnings, watching, stampedBeers, beerCounts] = await Promise.all([
     getMemberStats("", userId),
     getPicksForUsersInMatch(memberInput, match.id),
-    getDrinksForUsersInMatch(memberIds, match.id),
+    getMatchEarningsForUsers(memberIds, match.id),
     getWatchingForUsersInMatch(memberIds, match.id),
     getUserStampedBeers(userId),
     getUserBeerCountsForMatch(userId, match.id, teamCodes),
   ]);
 
   const myPick = picks.find((p) => p.userId === userId);
-  const myDrinks = Number(drinkCounts.get(userId) ?? 0);
+  const myDrinks = Number(earnings.get(userId)?.drinks ?? 0);
   const myBeerCountThisMatch = Number(
     Array.from(beerCounts.values()).reduce((a, b) => Number(a) + Number(b), 0),
   );
@@ -469,6 +470,9 @@ async function LiveView({
   const beersA = match.team_a_code ? COUNTRY_BEERS[match.team_a_code] ?? [] : [];
   const beersB = match.team_b_code ? COUNTRY_BEERS[match.team_b_code] ?? [] : [];
 
+  // Pass every bracket-mate; WatchingNow renders whoever has earned WCC on
+  // this match (plus you) and keeps polling the full set, so a new earner
+  // appears mid-match without a reload.
   const members: WatchingMember[] = picks.map((p) => ({
     userId: p.userId,
     displayName: p.userId === userId ? "You" : p.displayName,
@@ -478,7 +482,8 @@ async function LiveView({
         : p.pick === "B"
           ? flag(match.team_b_code)
           : "",
-    drinkCount: drinkCounts.get(p.userId) ?? 0,
+    drinkCount: earnings.get(p.userId)?.drinks ?? 0,
+    wcc: earnings.get(p.userId)?.wcc ?? 0,
     watching: watching.has(p.userId),
     isYou: p.userId === userId,
   }));

@@ -10,6 +10,7 @@ export type WatchingMember = {
   displayName: string;
   flag: string;
   drinkCount: number;
+  wcc: number;
   watching: boolean;
   isYou: boolean;
 };
@@ -56,7 +57,7 @@ export function WatchingNow({
           .gte("created_at", sinceIso),
         supabase
           .from("wc_drinks")
-          .select("user_id")
+          .select("user_id, country_code")
           .in("user_id", ids)
           .eq("match_id", matchId),
       ]);
@@ -65,16 +66,20 @@ export function WatchingNow({
       const watchingSet = new Set<string>(
         ((eventsRes.data ?? []) as { user_id: string }[]).map((r) => r.user_id),
       );
-      const counts = new Map<string, number>();
-      for (const d of (drinksRes.data ?? []) as { user_id: string }[]) {
-        counts.set(d.user_id, (counts.get(d.user_id) ?? 0) + 1);
+      const tally = new Map<string, { drinks: number; wcc: number }>();
+      for (const d of (drinksRes.data ?? []) as { user_id: string; country_code: string | null }[]) {
+        const cur = tally.get(d.user_id) ?? { drinks: 0, wcc: 0 };
+        cur.drinks += 1;
+        cur.wcc += d.country_code ? 2 : 1;
+        tally.set(d.user_id, cur);
       }
 
       setMembers((prev) =>
         prev.map((m) => ({
           ...m,
           watching: watchingSet.has(m.userId),
-          drinkCount: counts.get(m.userId) ?? 0,
+          drinkCount: tally.get(m.userId)?.drinks ?? 0,
+          wcc: tally.get(m.userId)?.wcc ?? 0,
         })),
       );
     }
@@ -86,9 +91,13 @@ export function WatchingNow({
     };
   }, [matchId, userIdsKey]);
 
-  const maxCount = Math.max(1, ...members.map((m) => m.drinkCount));
+  // Show anyone who's earned WCC on this match, plus you. The "watching" ping
+  // is just a live presence accent now - it doesn't gate whether someone (or
+  // their cups) appears.
+  const shown = members.filter((m) => m.isYou || m.wcc > 0);
+  const maxWcc = Math.max(1, ...shown.map((m) => m.wcc));
   const watchingCount = members.filter((m) => m.watching).length;
-  const totalDrinks = members.reduce((s, m) => s + m.drinkCount, 0);
+  const totalWcc = members.reduce((s, m) => s + m.wcc, 0);
 
   return (
     <div className="card">
@@ -97,48 +106,46 @@ export function WatchingNow({
           🏆 Your people
         </span>
         <span className="t-small muted" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          {watchingCount} of {members.length} watching · <WccIcon size={12} /> {totalDrinks}
+          {watchingCount} watching · <WccIcon size={12} /> {totalWcc}
         </span>
       </div>
-      {members
+      {shown
         .slice()
         .sort((a, b) => {
-          if (a.isYou !== b.isYou) return a.isYou ? -1 : 1;
-          if (a.watching !== b.watching) return a.watching ? -1 : 1;
-          return b.drinkCount - a.drinkCount;
+          if (b.wcc !== a.wcc) return b.wcc - a.wcc;
+          return a.isYou ? -1 : b.isYou ? 1 : 0;
         })
         .map((m) => {
-          const widthPct = m.watching ? Math.round((m.drinkCount / maxCount) * 100) : 0;
+          const widthPct = Math.round((m.wcc / maxWcc) * 100);
           return (
-            <div
-              key={m.userId}
-              className={`drink-row ${m.isYou ? "you" : ""}`}
-              style={m.watching ? undefined : { opacity: 0.5 }}
-            >
-              <span className="flag" style={m.watching ? undefined : { filter: "grayscale(1)" }}>
-                {m.flag || "·"}
-              </span>
-              <span className="who">
+            <div key={m.userId} className={`drink-row ${m.isYou ? "you" : ""}`}>
+              <span className="flag">{m.flag || "·"}</span>
+              <span className="who" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                 {m.displayName}
-                {m.watching ? "" : " · not in"}
-              </span>
-              <span className="bar-wrap">
                 {m.watching ? (
                   <span
-                    className="bar"
-                    style={{ width: `${widthPct}%`, transition: "width 300ms ease" }}
+                    aria-label="watching now"
+                    title="watching now"
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: "50%",
+                      background: "var(--live)",
+                      display: "inline-block",
+                      flex: "0 0 auto",
+                    }}
                   />
                 ) : null}
               </span>
+              <span className="bar-wrap">
+                <span
+                  className="bar"
+                  style={{ width: `${widthPct}%`, transition: "width 300ms ease" }}
+                />
+              </span>
               <span className="count" style={{ display: "inline-flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
-                {m.watching ? (
-                  <>
-                    <WccIcon size={14} />
-                    {m.drinkCount}
-                  </>
-                ) : (
-                  "-"
-                )}
+                <WccIcon size={14} />
+                {m.wcc}
               </span>
             </div>
           );

@@ -2,6 +2,21 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getMemberStats } from "@/lib/stats";
+
+/** A removal can't drop a user below 0 WCC. WCC goes "spent" the moment it's
+ *  staked on a pick, so a drink whose WCC is already committed to a stake can't
+ *  be un-logged - that's exactly how someone slipped to -1 before this guard. */
+async function removalKeepsBalanceNonNegative(
+  userId: string,
+  removeValue: number,
+): Promise<boolean> {
+  const stats = await getMemberStats("", userId);
+  return stats.wcc - removeValue >= 0;
+}
+
+const STAKE_BLOCK_MSG =
+  "That drink is backing a pick stake - removing it would drop you below 0 WCC.";
 
 export type PourArgs = {
   matchId: number | null;
@@ -66,6 +81,10 @@ export async function undoLastBasicForMatchAction(
   if (selErr) return { error: selErr.message };
   if (!last || last.length === 0) return { error: "no basic drinks to remove" };
 
+  if (!(await removalKeepsBalanceNonNegative(user.id, 1))) {
+    return { error: STAKE_BLOCK_MSG };
+  }
+
   const { error: delErr } = await supabase
     .from("wc_drinks")
     .delete()
@@ -103,6 +122,10 @@ export async function undoLastBeerAction(args: {
   if (selErr) return { error: selErr.message };
   if (!last || last.length === 0) return { error: "nothing to remove" };
 
+  if (!(await removalKeepsBalanceNonNegative(user.id, 2))) {
+    return { error: STAKE_BLOCK_MSG };
+  }
+
   const { error: delErr } = await supabase
     .from("wc_drinks")
     .delete()
@@ -125,13 +148,18 @@ export async function undoLastPourAction(): Promise<{ ok: true } | { error: stri
   const cutoff = new Date(Date.now() - 5 * 60_000).toISOString();
   const { data: last, error: selErr } = await supabase
     .from("wc_drinks")
-    .select("id, match_id")
+    .select("id, match_id, country_code")
     .eq("user_id", user.id)
     .gte("created_at", cutoff)
     .order("created_at", { ascending: false })
     .limit(1);
   if (selErr) return { error: selErr.message };
   if (!last || last.length === 0) return { error: "nothing recent to undo" };
+
+  const removeValue = (last[0] as { country_code: string | null }).country_code ? 2 : 1;
+  if (!(await removalKeepsBalanceNonNegative(user.id, removeValue))) {
+    return { error: STAKE_BLOCK_MSG };
+  }
 
   const { error: delErr } = await supabase
     .from("wc_drinks")

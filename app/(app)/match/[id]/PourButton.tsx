@@ -47,6 +47,8 @@ export function PourButton({
 
   const country = toNum(countryCount);
   const matchTotal = basicCount + country;
+  // WCC is the headline: a basic drink is 1, a country beer 2.
+  const matchWcc = basicCount + country * 2;
 
   function plus() {
     setErr(null);
@@ -100,19 +102,19 @@ export function PourButton({
         </button>
         <div className="core">
           <div className="label-row">
-            <WccIcon size={16} /> Drinks this match
+            <WccIcon size={16} /> WCC this match
           </div>
-          <div className="big-num tnum">{matchTotal}</div>
+          <div className="big-num tnum">{matchWcc}</div>
           <div className="match-breakdown tnum">
             <span className={basicCount > 0 ? "" : "dim"}>
-              <span className="bd-dot bd-basic" /> {basicCount} basic
+              <span className="bd-dot bd-basic" /> +{basicCount} basic
             </span>
             <span className="bd-sep">·</span>
             <span className={country > 0 ? "" : "dim"}>
-              <span className="bd-dot bd-country" /> {country} country
+              <span className="bd-dot bd-country" /> +{country * 2} country
             </span>
           </div>
-          <div className="sub-meta tnum">{totalDrinks} total all-time</div>
+          <div className="sub-meta tnum">{matchTotal} drinks · {totalDrinks} all-time</div>
         </div>
         <button
           ref={plusRef}
