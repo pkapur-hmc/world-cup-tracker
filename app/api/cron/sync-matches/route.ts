@@ -137,16 +137,22 @@ export async function GET(request: Request) {
     return row;
   });
 
-  // ---- ESPN live-score overlay ----
-  // football-data's free tier lags in-play scores by many minutes even when
-  // its lastUpdated looks fresh (KOR/CZE 2026-06-12: ESPN showed 0-1 in the
-  // 64' while both football-data endpoints still said 0-0). While a match is
-  // not yet final, ESPN's near-real-time score wins. football-data remains
-  // the only authority for status and settlement: once a row is `final`, the
-  // overlay never touches it, so picks always settle on football-data's
-  // official score. Best-effort: if ESPN is down or the fixture doesn't
-  // match, the row keeps football-data's numbers.
+  // ---- ESPN live overlay (score + full-time) ----
+  // football-data's free tier lags the live game by many minutes even when
+  // its lastUpdated looks fresh: in-play scores (KOR/CZE 2026-06-12: ESPN
+  // showed 0-1 in the 64' while both football-data endpoints still said 0-0)
+  // AND the FINISHED flip (both opening matches sat "live" 10-15min past the
+  // final whistle). While a match is not yet final, ESPN's near-real-time
+  // score wins; when ESPN reports full time, the row flips to `final` so the
+  // app ends the match within a tick of the real whistle.
+  //
+  // Settlement still belongs to football-data alone: picks only settle once
+  // football-data ITSELF says FINISHED (fdFinalIds below), with its official
+  // score and winner. An ESPN-finalized row just waits. Overlay is
+  // best-effort: if ESPN is down or the fixture doesn't match, the row keeps
+  // football-data's numbers.
   let espnOverlays = 0;
+  let espnFinals = 0;
   try {
     const espnScores = await fetchEspnScores();
     const FIXTURE_MATCH_WINDOW_MS = 12 * 60 * 60 * 1000;
@@ -170,6 +176,15 @@ export async function GET(request: Request) {
         row.score_b = b;
         espnOverlays++;
       }
+      if (ev.state === "post" && row.status !== "postponed") {
+        row.status = "final";
+        // Winner from the ESPN final score so the post-match UI reads right
+        // while we wait for football-data; its official result overwrites
+        // this when it lands.
+        row.winner_code =
+          a > b ? row.team_a_code : b > a ? row.team_b_code : null;
+        espnFinals++;
+      }
     }
   } catch {
     // overlay is optional; the football-data sync still lands
@@ -189,13 +204,25 @@ export async function GET(request: Request) {
   // For every match now `final`, settle any picks still unsettled.
   // For every match now `postponed`, refund any picks still unsettled.
   // RPCs are idempotent (they only touch rows where settled_at IS NULL).
-  // Never settle without a score in hand: a final match with null scores is
-  // indistinguishable from a draw inside the RPC (winner_code null), which is
-  // exactly how MEX/RSA paid every Mexico pick 0 on opening night. Settlement
-  // just waits for a later tick to deliver the score.
+  // Two settlement gates, both required:
+  // 1. football-data ITSELF must say FINISHED this tick (not just the row
+  //    status, which ESPN full-time or a previous tick may have set) - picks
+  //    pay out on the official result only.
+  // 2. A real score must be in hand: final with null scores is
+  //    indistinguishable from a draw inside the RPC (winner_code null), which
+  //    is exactly how MEX/RSA paid every Mexico pick 0 on opening night.
+  const fdFinalIds = new Set(
+    fdMatches
+      .filter((m) => m.status === "FINISHED" || m.status === "AWARDED")
+      .map((m) => m.id),
+  );
   const finalIds = matchRows
     .filter(
-      (r) => r.status === "final" && r.score_a !== null && r.score_b !== null,
+      (r) =>
+        fdFinalIds.has(r.id) &&
+        r.status === "final" &&
+        r.score_a !== null &&
+        r.score_b !== null,
     )
     .map((r) => r.id);
   const postponedIds = matchRows
@@ -223,6 +250,7 @@ export async function GET(request: Request) {
     matches: matchRows.length,
     detail_fetches: needsDetail.length,
     espn_overlays: espnOverlays,
+    espn_finals: espnFinals,
     picks_settled: settled,
     picks_refunded: refunded,
     elapsed_ms: Date.now() - startedAt,
