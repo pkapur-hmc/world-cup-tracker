@@ -6,7 +6,6 @@ import { getCurrentMembership, getCrossBracketMembers } from "@/lib/membership";
 import { getMemberStats } from "@/lib/stats";
 import {
   getPicksForUsersInMatch,
-  getDrinksForUsersInMatch,
   getMatchEarningsForUsers,
   getWatchingForUsersInMatch,
   getUserStampedBeers,
@@ -266,6 +265,14 @@ function MatchHero({
   );
 }
 
+/**
+ * Picks grouped BY BET, not by person: one section per side (team A, draw,
+ * team B - empty sides skipped) with a flag + count header and the backers'
+ * names wrapped below, biggest stake first. Post-match the winning section
+ * gets a ✓ and winners show their payout; losing sections dim. Non-bettors
+ * collapse to one muted footer line - present for the call-out, but they
+ * don't get a section.
+ */
 function GroupPicksList({
   picks,
   match,
@@ -273,22 +280,46 @@ function GroupPicksList({
   picks: Awaited<ReturnType<typeof getPicksForUsersInMatch>>;
   match: Match;
 }) {
-  function pickLabel(p: "A" | "D" | "B") {
-    if (p === "D") return { label: "Draw", flag: "🤝" };
-    if (p === "A") return { label: match.team_a_code ?? "A", flag: flag(match.team_a_code) };
-    return { label: match.team_b_code ?? "B", flag: flag(match.team_b_code) };
-  }
-  function statusOf(p: typeof picks[number]): "correct" | "wrong" | "hidden" | "open" {
-    if (!p.pick) return "hidden";
-    if (match.status !== "final" || !p.settled_at) return "open";
-    const correct =
-      (p.pick === "A" && match.winner_code === match.team_a_code) ||
-      (p.pick === "B" && match.winner_code === match.team_b_code) ||
-      (p.pick === "D" && match.winner_code === null);
-    return correct ? "correct" : "wrong";
-  }
-
   const inCount = picks.filter((p) => p.pick).length;
+  const isFinal = match.status === "final";
+  const winnerSide: "A" | "D" | "B" | null = !isFinal
+    ? null
+    : match.winner_code === match.team_a_code
+      ? "A"
+      : match.winner_code === match.team_b_code
+        ? "B"
+        : "D";
+
+  const sides: {
+    key: "A" | "D" | "B";
+    flag: string;
+    label: string;
+    ink: string | null;
+    backers: typeof picks;
+  }[] = [
+    {
+      key: "A" as const,
+      flag: flag(match.team_a_code),
+      label: match.team_a_code ?? "A",
+      ink: match.team_a_code ? colorFor(match.team_a_code).ink : null,
+    },
+    { key: "D" as const, flag: "🤝", label: "Draw", ink: null },
+    {
+      key: "B" as const,
+      flag: flag(match.team_b_code),
+      label: match.team_b_code ?? "B",
+      ink: match.team_b_code ? colorFor(match.team_b_code).ink : null,
+    },
+  ]
+    .map((s) => ({
+      ...s,
+      backers: picks
+        .filter((p) => p.pick === s.key)
+        .sort((a, b) => b.stake - a.stake || a.displayName.localeCompare(b.displayName)),
+    }))
+    .filter((s) => s.backers.length > 0);
+
+  const noBet = picks.filter((p) => !p.pick);
 
   return (
     <div>
@@ -298,35 +329,92 @@ function GroupPicksList({
           {inCount} of {picks.length} in
         </span>
       </div>
-      <div className="card">
-        {picks.map((p) => {
-          const s = statusOf(p);
-          const cls = s === "correct" ? "correct" : s === "wrong" ? "wrong" : s === "hidden" ? "hidden" : "";
-          return (
-            <div key={p.userId} className={`group-pick-row ${cls}`}>
-              <div className="avatar sm">{p.displayName.slice(0, 1).toUpperCase()}</div>
-              <div className="gp-name">{p.displayName}</div>
-              {p.pick ? (
-                <span className="gp-pick">
-                  <span className="flag">{pickLabel(p.pick).flag}</span> {pickLabel(p.pick).label}
-                </span>
-              ) : (
-                <span className="gp-pick dim">No bet</span>
-              )}
-              <span className={`gp-stake tnum ${p.pick ? "" : "dim"}`}>
-                {p.pick
-                  ? match.status === "final" && p.settled_at
-                    ? p.payout_wcp > 0
-                      ? `+${p.payout_wcp}`
+      <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {sides.length === 0 ? (
+          <div className="t-small muted" style={{ textAlign: "center", padding: "6px 0" }}>
+            No bets yet.
+          </div>
+        ) : (
+          sides.map((s) => {
+            const won = winnerSide === s.key;
+            const lost = winnerSide !== null && !won;
+            return (
+              <div key={s.key} style={{ opacity: lost ? 0.5 : 1 }}>
+                <div
+                  className="caps-label"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    color: s.ink ?? undefined,
+                  }}
+                >
+                  <span className="flag">{s.flag}</span>
+                  <span>{s.label}</span>
+                  <span className="muted" style={{ fontWeight: 600 }}>· {s.backers.length}</span>
+                  {won ? <span style={{ color: "var(--pitch)" }}>✓</span> : null}
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+                  {s.backers.map((p) => {
+                    const settled = isFinal && p.settled_at;
+                    const suffix = settled
+                      ? p.payout_wcp > 0
+                        ? `+${p.payout_wcp}`
+                        : p.stake > 0
+                          ? `-${p.stake}`
+                          : null
                       : p.stake > 0
-                        ? `-${p.stake}`
-                        : "0"
-                    : p.stake
-                  : "-"}
-              </span>
-            </div>
-          );
-        })}
+                        ? `·${p.stake}`
+                        : null;
+                    return (
+                      <span
+                        key={p.userId}
+                        className="t-small"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          padding: "3px 9px",
+                          borderRadius: "var(--r-pill)",
+                          border: "1px solid var(--stout-12)",
+                          background: "var(--paper)",
+                        }}
+                      >
+                        {p.displayName}
+                        {suffix ? (
+                          <span
+                            className="tnum"
+                            style={{
+                              fontWeight: 700,
+                              color: settled
+                                ? p.payout_wcp > 0
+                                  ? "var(--pitch)"
+                                  : "var(--penalty)"
+                                : "var(--stout-55)",
+                            }}
+                          >
+                            {suffix}
+                          </span>
+                        ) : null}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })
+        )}
+        {noBet.length > 0 ? (
+          <div
+            className="t-small muted"
+            style={{
+              borderTop: "1px solid var(--stout-12)",
+              paddingTop: 10,
+            }}
+          >
+            No bet · {noBet.map((p) => p.displayName).join(", ")}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -404,17 +492,28 @@ function PostMatchSummary({
   );
 }
 
-function MatchDrinksBars({ counts, members }: { counts: Map<string, number>; members: { userId: string; displayName: string; flag: string }[] }) {
-  const max = Math.max(1, ...Array.from(counts.values()));
+/** Post-match earnings bars, ranked and sized by WCC earned (country beer = 2,
+ *  basic = 1) - the same ordering the live panel uses, so the room reads the
+ *  same during and after the match. */
+function MatchDrinksBars({
+  earnings,
+  members,
+}: {
+  earnings: Map<string, { drinks: number; wcc: number }>;
+  members: { userId: string; displayName: string; flag: string }[];
+}) {
+  const max = Math.max(1, ...Array.from(earnings.values()).map((e) => e.wcc));
   const sorted = members
-    .map((m) => ({ ...m, c: counts.get(m.userId) ?? 0 }))
-    .sort((a, b) => b.c - a.c);
-  const total = sorted.reduce((s, x) => s + x.c, 0);
+    .map((m) => ({ ...m, wcc: earnings.get(m.userId)?.wcc ?? 0 }))
+    .sort((a, b) => b.wcc - a.wcc);
+  const total = sorted.reduce((s, x) => s + x.wcc, 0);
   return (
     <div>
       <div className="section-label">
-        <span className="caps-label">Match drinks</span>
-        <span className="t-small muted">{total} total</span>
+        <span className="caps-label">WCC this match</span>
+        <span className="t-small muted" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <WccIcon size={12} /> {total} total
+        </span>
       </div>
       <div className="card">
         {sorted.map((m) => (
@@ -422,9 +521,12 @@ function MatchDrinksBars({ counts, members }: { counts: Map<string, number>; mem
             <span className="flag">{m.flag || "·"}</span>
             <span className="who">{m.displayName}</span>
             <span className="bar-wrap">
-              {m.c > 0 ? <span className="bar" style={{ width: `${Math.round((m.c / max) * 100)}%` }} /> : null}
+              {m.wcc > 0 ? <span className="bar" style={{ width: `${Math.round((m.wcc / max) * 100)}%` }} /> : null}
             </span>
-            <span className="count">{m.c}</span>
+            <span className="count" style={{ display: "inline-flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
+              <WccIcon size={14} />
+              {m.wcc}
+            </span>
           </div>
         ))}
       </div>
@@ -734,9 +836,9 @@ async function PostView({
     role: m.role,
   }));
   const memberIds = crossBracketMembers.map((m) => m.userId);
-  const [picks, drinkCounts] = await Promise.all([
+  const [picks, earnings] = await Promise.all([
     getPicksForUsersInMatch(memberInput, match.id),
-    getDrinksForUsersInMatch(memberIds, match.id),
+    getMatchEarningsForUsers(memberIds, match.id),
   ]);
   const my = picks.find((p) => p.userId === userId);
   const memberList = picks.map((p) => ({
@@ -760,7 +862,7 @@ async function PostView({
         <MatchHero match={match} />
         <PostMatchSummary match={match} myPick={my} />
         <GroupPicksList picks={picks} match={match} />
-        <MatchDrinksBars counts={drinkCounts} members={memberList} />
+        <MatchDrinksBars earnings={earnings} members={memberList} />
         <div style={{ height: 16 }} />
       </div>
     </>

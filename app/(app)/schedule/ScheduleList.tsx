@@ -8,12 +8,30 @@ import { FLAG_EMOJI } from "@/data/flag-emojis";
 import { colorFor } from "@/data/country-colors";
 import { PickPanel } from "@/components/ui/PickPanel";
 import { LocalTime } from "@/components/ui/LocalTime";
+import { WccIcon } from "@/components/ui/CurrencyIcon";
 
 export type MyPick = { pick: "A" | "D" | "B"; stake: number };
+/** Pick row shape for the Past view (mirrors lib/picks UserMatchPick - kept
+ *  local so this client module doesn't import server-only code). */
+export type PastPick = {
+  pick: "A" | "D" | "B";
+  stake: number;
+  settled_at: string | null;
+  payout_wcc: number;
+  payout_wcp: number;
+};
+/** Your result for a finished match: pours + pick outcome + net WCC. */
+export type MatchHistory = {
+  pours: number;
+  pourWcc: number;
+  pick: PastPick | null;
+  net: number;
+};
 export type ScheduleItem = {
   match: Match;
   myPick: MyPick | null;
   city: string | null;
+  history?: MatchHistory;
 };
 
 function flag(code: string | null) {
@@ -46,6 +64,88 @@ function dayLabelParts(
   if (k === yesK) return { emph: "Yesterday", rest: ` · ${monthDay}` };
   const weekday = d.toLocaleDateString(undefined, { weekday: "long", timeZone: tz });
   return { emph: weekday, rest: ` · ${monthDay}` };
+}
+
+/**
+ * The Past card's result strip: what YOU took from this match. Pours and the
+ * pick outcome read left-to-right as the story; the net WCC sits right as
+ * the sum. A match with no pours and no pick collapses to one quiet line.
+ */
+function HistoryStrip({ history, match }: { history: MatchHistory; match: Match }) {
+  const { pours, pick, net } = history;
+  const sat = pours === 0 && !pick;
+
+  const pickEl = (() => {
+    if (!pick) return <span>no bet</span>;
+    const label =
+      pick.pick === "D"
+        ? "🤝 Draw"
+        : pick.pick === "A"
+          ? `${flag(match.team_a_code)} ${match.team_a_code ?? "A"}`
+          : `${flag(match.team_b_code)} ${match.team_b_code ?? "B"}`;
+    if (!pick.settled_at) return <span>{label} · pending</span>;
+    if (pick.payout_wcc > 0) return <span>{label} · refunded</span>;
+    if (pick.payout_wcp > 0)
+      return (
+        <span style={{ color: "var(--pitch)", fontWeight: 700 }}>
+          ✓ {label} +{pick.payout_wcp}
+        </span>
+      );
+    return (
+      <span style={{ color: "var(--penalty)", fontWeight: 700 }}>
+        ✗ {label}
+        {pick.stake > 0 ? ` -${pick.stake}` : ""}
+      </span>
+    );
+  })();
+
+  return (
+    <div
+      style={{
+        marginTop: 10,
+        paddingTop: 10,
+        borderTop: "1px solid var(--stout-12)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 8,
+      }}
+    >
+      {sat ? (
+        <span className="t-small muted">Sat this one out</span>
+      ) : (
+        <>
+          <span
+            className="t-small muted"
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}
+          >
+            <span>
+              🍺 {pours} {pours === 1 ? "pour" : "pours"}
+            </span>
+            <span>·</span>
+            {pickEl}
+          </span>
+          <span
+            className="tnum"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              fontWeight: 800,
+              fontFamily: "var(--ff-display)",
+              fontSize: 16,
+              color:
+                net > 0 ? "var(--pitch)" : net < 0 ? "var(--penalty)" : "var(--stout-55)",
+              flex: "0 0 auto",
+            }}
+          >
+            {net > 0 ? `+${net}` : net}
+            <WccIcon size={14} />
+          </span>
+        </>
+      )}
+    </div>
+  );
 }
 
 function MatchCard({ item }: { item: ScheduleItem }) {
@@ -149,6 +249,7 @@ function MatchCard({ item }: { item: ScheduleItem }) {
             style={{ marginTop: 10 }}
           />
         ) : null}
+        {item.history ? <HistoryStrip history={item.history} match={match} /> : null}
       </div>
       <svg className="chev" width="16" height="16" viewBox="0 0 24 24" fill="none">
         <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -166,7 +267,13 @@ function MatchCard({ item }: { item: ScheduleItem }) {
  * after mount - the structural regroup happens post-hydration, so there's no
  * hydration mismatch.
  */
-export function ScheduleList({ items }: { items: ScheduleItem[] }) {
+export function ScheduleList({
+  items,
+  emptyLead,
+}: {
+  items: ScheduleItem[];
+  emptyLead?: string;
+}) {
   // "UTC" for SSR + the first client render (deterministic, matches the server
   // HTML), then the viewer's own zone (undefined) once hydrated - same two-phase
   // trick as <LocalTime>, kept lint-clean via useSyncExternalStore.
@@ -178,8 +285,8 @@ export function ScheduleList({ items }: { items: ScheduleItem[] }) {
 
   if (items.length === 0) {
     return (
-      <div className="card empty-block" style={{ textAlign: "center" }}>
-        <div className="empty-lead">Nothing scheduled.</div>
+      <div className="card empty-block" style={{ textAlign: "center", marginTop: 12 }}>
+        <div className="empty-lead">{emptyLead ?? "Nothing scheduled."}</div>
         <div className="empty-sub">Try a different stage.</div>
       </div>
     );

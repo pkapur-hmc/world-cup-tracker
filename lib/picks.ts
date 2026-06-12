@@ -78,26 +78,61 @@ export async function getPicksForUsersInMatch(
 /** Every pick the current user has made, keyed by match id. Used by the
  *  schedule to show your picked country on each card (mirrors the home page).
  *  Guarded so it returns an empty map before scripts/002 has been applied. */
+export type UserMatchPick = {
+  pick: "A" | "D" | "B";
+  stake: number;
+  settled_at: string | null;
+  payout_wcc: number;
+  payout_wcp: number;
+};
+
 export async function getUserPicksByMatch(
   userId: string,
-): Promise<Map<number, { pick: "A" | "D" | "B"; stake: number }>> {
-  const out = new Map<number, { pick: "A" | "D" | "B"; stake: number }>();
+): Promise<Map<number, UserMatchPick>> {
+  const out = new Map<number, UserMatchPick>();
   const supabase = await createClient();
   try {
     const { data, error } = await supabase
       .from("wc_picks")
-      .select("match_id, pick, stake")
+      .select("match_id, pick, stake, settled_at, payout_wcc, payout_wcp")
       .eq("user_id", userId);
     if (error) return out;
-    for (const r of (data ?? []) as {
-      match_id: number;
-      pick: "A" | "D" | "B";
-      stake: number;
-    }[]) {
-      out.set(r.match_id, { pick: r.pick, stake: r.stake });
+    for (const r of (data ?? []) as ({ match_id: number } & UserMatchPick)[]) {
+      out.set(r.match_id, {
+        pick: r.pick,
+        stake: r.stake,
+        settled_at: r.settled_at,
+        payout_wcc: r.payout_wcc,
+        payout_wcp: r.payout_wcp,
+      });
     }
   } catch {
     return out;
+  }
+  return out;
+}
+
+/** The current user's drink tally per match: raw pours and the WCC those
+ *  pours earned (country beer = 2, basic = 1). Powers the schedule's Past
+ *  tab per-match result strip. */
+export async function getUserDrinkStatsByMatch(
+  userId: string,
+): Promise<Map<number, { drinks: number; wcc: number }>> {
+  const out = new Map<number, { drinks: number; wcc: number }>();
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("wc_drinks")
+    .select("match_id, country_code")
+    .eq("user_id", userId);
+  for (const d of (data ?? []) as {
+    match_id: number | null;
+    country_code: string | null;
+  }[]) {
+    if (d.match_id === null) continue;
+    const cur = out.get(d.match_id) ?? { drinks: 0, wcc: 0 };
+    cur.drinks += 1;
+    cur.wcc += d.country_code ? 2 : 1;
+    out.set(d.match_id, cur);
   }
   return out;
 }

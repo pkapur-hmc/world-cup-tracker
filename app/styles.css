@@ -850,6 +850,32 @@ html, body {
 .chip:hover { background: var(--paper); }
 .chip.is-active { background: var(--stout); color: var(--foam-lit); border-color: var(--stout); }
 
+/* Segmented tabs: equal-width siblings that switch a panel or view.
+   Same stout active treatment as chips, but squared-off and full-bleed -
+   chips filter within a view, seg-tabs swap the view itself. */
+.seg-tabs { display: flex; gap: 6px; }
+.seg-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--stout-12);
+  background: var(--paper);
+  font-family: var(--ff-ui);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stout);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 150ms ease, color 150ms ease;
+}
+.seg-tab.is-active { background: var(--stout); color: var(--foam-lit); border-color: var(--stout); }
+
 .badge {
   display: inline-flex;
   align-items: center;

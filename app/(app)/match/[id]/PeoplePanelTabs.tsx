@@ -16,7 +16,7 @@ export function PeoplePanelTabs({
   const [active, setActive] = useState(tabs[0]?.key);
   return (
     <div>
-      <div role="tablist" style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+      <div role="tablist" className="seg-tabs" style={{ marginBottom: 8 }}>
         {tabs.map((t) => {
           const selected = t.key === active;
           return (
@@ -26,19 +26,7 @@ export function PeoplePanelTabs({
               role="tab"
               aria-selected={selected}
               onClick={() => setActive(t.key)}
-              className="caps-label"
-              style={{
-                flex: 1,
-                padding: "8px 10px",
-                borderRadius: "var(--r-md)",
-                border: selected
-                  ? "1px solid var(--stout)"
-                  : "1px solid var(--stout-12)",
-                background: selected ? "var(--stout)" : "var(--paper)",
-                color: selected ? "var(--foam-lit)" : "inherit",
-                cursor: "pointer",
-                transition: "background 150ms ease, color 150ms ease",
-              }}
+              className={`seg-tab ${selected ? "is-active" : ""}`}
             >
               {t.label}
             </button>
