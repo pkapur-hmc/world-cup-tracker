@@ -17,6 +17,7 @@ import {
   toMatchRow,
   type FdMatch,
 } from "@/lib/football-data";
+import { fetchEspnScores } from "@/lib/espn-scoreboard";
 
 /**
  * The bulk feed omits score.fullTime even on FINISHED matches (the detail
@@ -135,6 +136,45 @@ export async function GET(request: Request) {
     }
     return row;
   });
+
+  // ---- ESPN live-score overlay ----
+  // football-data's free tier lags in-play scores by many minutes even when
+  // its lastUpdated looks fresh (KOR/CZE 2026-06-12: ESPN showed 0-1 in the
+  // 64' while both football-data endpoints still said 0-0). While a match is
+  // not yet final, ESPN's near-real-time score wins. football-data remains
+  // the only authority for status and settlement: once a row is `final`, the
+  // overlay never touches it, so picks always settle on football-data's
+  // official score. Best-effort: if ESPN is down or the fixture doesn't
+  // match, the row keeps football-data's numbers.
+  let espnOverlays = 0;
+  try {
+    const espnScores = await fetchEspnScores();
+    const FIXTURE_MATCH_WINDOW_MS = 12 * 60 * 60 * 1000;
+    for (const row of matchRows) {
+      if (row.status === "final" || !row.team_a_code || !row.team_b_code) {
+        continue;
+      }
+      const kickoff = Date.parse(row.kickoff_at);
+      const ev = espnScores.find(
+        (s) =>
+          Math.abs(s.kickoffMs - kickoff) < FIXTURE_MATCH_WINDOW_MS &&
+          ((s.homeCode === row.team_a_code && s.awayCode === row.team_b_code) ||
+            (s.homeCode === row.team_b_code && s.awayCode === row.team_a_code)),
+      );
+      if (!ev) continue;
+      const swapped = ev.homeCode === row.team_b_code;
+      const a = swapped ? ev.awayScore : ev.homeScore;
+      const b = swapped ? ev.homeScore : ev.awayScore;
+      if (row.score_a !== a || row.score_b !== b) {
+        row.score_a = a;
+        row.score_b = b;
+        espnOverlays++;
+      }
+    }
+  } catch {
+    // overlay is optional; the football-data sync still lands
+  }
+
   const { error: matchesErr } = await supabase
     .from("wc_matches")
     .upsert(matchRows, { onConflict: "id" });
@@ -182,6 +222,7 @@ export async function GET(request: Request) {
     teams: teams.length,
     matches: matchRows.length,
     detail_fetches: needsDetail.length,
+    espn_overlays: espnOverlays,
     picks_settled: settled,
     picks_refunded: refunded,
     elapsed_ms: Date.now() - startedAt,
