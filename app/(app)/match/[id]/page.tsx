@@ -18,6 +18,7 @@ import { colorFor } from "@/data/country-colors";
 import { PourButton } from "./PourButton";
 import { BeerStampRail } from "./BeerStampRail";
 import { WatchingNow, type WatchingMember } from "./WatchingNow";
+import { PeoplePanelTabs } from "./PeoplePanelTabs";
 import { PickAndStake } from "./PickAndStake";
 import { GuardedMatchAppbar, UnsavedPickProvider } from "./UnsavedPickGuard";
 import { PickPanel } from "@/components/ui/PickPanel";
@@ -62,67 +63,50 @@ function MatchAppbar({ match }: { match: Match }) {
   );
 }
 
+/**
+ * One horizontal scoreboard line per side: code + flag for the home side,
+ * flag + code for the away side, flags hugging the score. Everything in the
+ * hero's main row shares a single vertical center, so nothing can float.
+ * The pick reads through a bold code + dimmed opponent; the "your pick"
+ * badge renders on its own row below (see MatchHero).
+ */
 function TeamChunk({
   code,
-  accentTeams = false,
+  side,
   picked = false,
   dimmed = false,
 }: {
   code: string | null;
-  accentTeams?: boolean;
+  side: "a" | "b";
   picked?: boolean;
   dimmed?: boolean;
 }) {
-  const c = (accentTeams || picked) && code ? colorFor(code) : null;
-  const inner = (
-    <>
-      <span className="flag xl" style={picked ? { transform: "scale(1.12)" } : undefined}>
-        {flag(code)}
-      </span>
-      <span className="t-sub" style={picked ? { fontWeight: 800 } : undefined}>
-        {code ?? "TBD"}
-      </span>
-      {picked && c ? (
-        <span
-          className="badge"
-          style={{
-            background: c.primary,
-            color: readableInk(c.primary),
-            fontSize: 9,
-            padding: "2px 8px",
-            marginTop: 2,
-          }}
-        >
-          ✓ Your pick
-        </span>
-      ) : null}
-    </>
+  const c = picked && code ? colorFor(code) : null;
+  const flagEl = <span className="flag xl">{flag(code)}</span>;
+  const codeEl = (
+    <span className="t-sub" style={picked ? { fontWeight: 800 } : undefined}>
+      {code ?? "TBD"}
+    </span>
   );
+  const inner =
+    side === "a" ? (
+      <>
+        {codeEl}
+        {flagEl}
+      </>
+    ) : (
+      <>
+        {flagEl}
+        {codeEl}
+      </>
+    );
   const wrapStyle: React.CSSProperties = {
-    display: "flex",
-    flexDirection: "column",
+    display: "inline-flex",
     alignItems: "center",
-    gap: 6,
+    gap: 10,
     opacity: dimmed ? 0.5 : 1,
     transition: "opacity 150ms ease",
-    ...(picked && c
-      ? {
-          background: c.tint,
-          border: `2px solid ${c.primary}`,
-          borderRadius: "var(--r-md)",
-          padding: "12px 18px",
-          boxShadow: `0 4px 14px -6px ${c.primary}`,
-          color: c.ink,
-        }
-      : c
-        ? {
-            background: c.tint,
-            borderBottom: `3px solid ${c.primary}`,
-            borderRadius: "var(--r-md)",
-            padding: "10px 18px",
-            color: c.ink,
-          }
-        : {}),
+    ...(c ? { color: c.ink } : {}),
   };
   if (!code) {
     return <div style={wrapStyle}>{inner}</div>;
@@ -137,13 +121,29 @@ function TeamChunk({
   );
 }
 
+function PickBadge({ code }: { code: string | null }) {
+  if (!code) return null;
+  const c = colorFor(code);
+  return (
+    <span
+      className="badge"
+      style={{
+        background: c.primary,
+        color: readableInk(c.primary),
+        fontSize: 9,
+        padding: "2px 8px",
+      }}
+    >
+      ✓ Your pick
+    </span>
+  );
+}
+
 function MatchHero({
   match,
-  accentTeams = false,
   pickedSide = null,
 }: {
   match: Match;
-  accentTeams?: boolean;
   pickedSide?: "A" | "D" | "B" | null;
 }) {
   const aPicked = pickedSide === "A";
@@ -154,14 +154,24 @@ function MatchHero({
   const teamBColor = match.team_b_code ? colorFor(match.team_b_code) : null;
   const phase = matchPhase(match);
   return (
-    <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
-      {/* 1fr auto 1fr keeps the score dead-center even when one team wears the
-          wider "your pick" box - equal side columns, score in the middle. */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 10 }}>
+    <div style={{ textAlign: "center", padding: "12px 0 4px" }}>
+      {/* Single scoreboard line: KOR 🇰🇷  2 - 1  🇨🇿 CZE. 1fr auto 1fr keeps
+          the score dead-center; one row, one vertical center, so flags, codes
+          and score always sit level. The picked side's badge lives on its own
+          grid row below and can't push anything off that line. */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr auto 1fr",
+          alignItems: "center",
+          columnGap: 14,
+          rowGap: 8,
+        }}
+      >
         <div style={{ justifySelf: "end", minWidth: 0 }}>
           <TeamChunk
             code={match.team_a_code}
-            accentTeams={accentTeams}
+            side="a"
             picked={aPicked}
             dimmed={hasTeamPick && !aPicked}
           />
@@ -218,11 +228,21 @@ function MatchHero({
         <div style={{ justifySelf: "start", minWidth: 0 }}>
           <TeamChunk
             code={match.team_b_code}
-            accentTeams={accentTeams}
+            side="b"
             picked={bPicked}
             dimmed={hasTeamPick && !bPicked}
           />
         </div>
+        {hasTeamPick ? (
+          <>
+            <div style={{ gridColumn: 1, gridRow: 2, justifySelf: "end" }}>
+              {aPicked ? <PickBadge code={match.team_a_code} /> : null}
+            </div>
+            <div style={{ gridColumn: 3, gridRow: 2, justifySelf: "start" }}>
+              {bPicked ? <PickBadge code={match.team_b_code} /> : null}
+            </div>
+          </>
+        ) : null}
       </div>
       {phase === "pre" && match.status === "scheduled" ? (
         <>
@@ -254,7 +274,7 @@ function GroupPicksList({
   match: Match;
 }) {
   function pickLabel(p: "A" | "D" | "B") {
-    if (p === "D") return { label: "Draw", flag: "•" };
+    if (p === "D") return { label: "Draw", flag: "🤝" };
     if (p === "A") return { label: match.team_a_code ?? "A", flag: flag(match.team_a_code) };
     return { label: match.team_b_code ?? "B", flag: flag(match.team_b_code) };
   }
@@ -484,12 +504,15 @@ async function LiveView({
   const members: WatchingMember[] = picks.map((p) => ({
     userId: p.userId,
     displayName: p.userId === userId ? "You" : p.displayName,
+    // Draw pick gets its own mark so it doesn't read as "no pick" in the row.
     flag:
       p.pick === "A"
         ? flag(match.team_a_code)
         : p.pick === "B"
           ? flag(match.team_b_code)
-          : "",
+          : p.pick === "D"
+            ? "🤝"
+            : "",
     drinkCount: earnings.get(p.userId)?.drinks ?? 0,
     wcc: earnings.get(p.userId)?.wcc ?? 0,
     watching: watching.has(p.userId),
@@ -586,7 +609,26 @@ async function LiveView({
           />
         ) : null}
 
-        <WatchingNow matchId={match.id} userIds={memberIds} initialMembers={members} />
+        <PeoplePanelTabs
+          tabs={[
+            {
+              key: "pours",
+              label: "🍺 Pours",
+              content: (
+                <WatchingNow
+                  matchId={match.id}
+                  userIds={memberIds}
+                  initialMembers={members}
+                />
+              ),
+            },
+            {
+              key: "picks",
+              label: "🎯 Picks",
+              content: <GroupPicksList picks={picks} match={match} />,
+            },
+          ]}
+        />
 
         <div style={{ height: 8 }} />
       </div>
@@ -700,12 +742,15 @@ async function PostView({
   const memberList = picks.map((p) => ({
     userId: p.userId,
     displayName: p.userId === userId ? "You" : p.displayName,
+    // Draw pick gets its own mark so it doesn't read as "no pick" in the row.
     flag:
       p.pick === "A"
         ? flag(match.team_a_code)
         : p.pick === "B"
           ? flag(match.team_b_code)
-          : "",
+          : p.pick === "D"
+            ? "🤝"
+            : "",
   }));
 
   return (
