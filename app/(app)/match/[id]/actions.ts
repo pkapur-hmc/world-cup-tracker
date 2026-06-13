@@ -137,6 +137,46 @@ export async function undoLastBeerAction(args: {
   return { ok: true };
 }
 
+/** Delete the user's most recent GENERIC country beer (country tagged, no
+ *  beer_label) for a match + country. Backs the "any other [country] beer"
+ *  stepper's − button. Worth +2 WCC, so the non-negative guard uses 2. */
+export async function undoLastGenericCountryAction(args: {
+  matchId: number;
+  countryCode: string;
+}): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "not signed in" };
+
+  const { data: last, error: selErr } = await supabase
+    .from("wc_drinks")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("match_id", args.matchId)
+    .eq("country_code", args.countryCode)
+    .is("beer_label", null)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (selErr) return { error: selErr.message };
+  if (!last || last.length === 0) return { error: "nothing to remove" };
+
+  if (!(await removalKeepsBalanceNonNegative(user.id, 2))) {
+    return { error: STAKE_BLOCK_MSG };
+  }
+
+  const { error: delErr } = await supabase
+    .from("wc_drinks")
+    .delete()
+    .eq("id", (last[0] as { id: string }).id);
+  if (delErr) return { error: delErr.message };
+
+  revalidatePath(`/match/${args.matchId}`);
+  revalidatePath("/");
+  return { ok: true };
+}
+
 /** Delete the user's most recent drink within the 5-minute undo window. */
 export async function undoLastPourAction(): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();

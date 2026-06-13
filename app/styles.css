@@ -1480,6 +1480,21 @@ html, body {
   background: var(--bubble);
   border: 1.5px solid var(--stout-12);
 }
+.pour-stepper .pour-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+.pour-stepper .pour-step-label {
+  font-family: var(--ff-ui);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--stout-55);
+  white-space: nowrap;
+}
 .pour-stepper .core { text-align: center; }
 .pour-stepper .label-row {
   font-family: var(--ff-ui);

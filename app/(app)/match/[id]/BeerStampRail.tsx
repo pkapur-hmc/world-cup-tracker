@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { pourAction, undoLastBeerAction } from "./actions";
+import { pourAction, undoLastBeerAction, undoLastGenericCountryAction } from "./actions";
 import type { CountryBeer } from "@/data/country-beers";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { CountryBottle } from "@/components/ui/CountryBottle";
@@ -22,6 +22,7 @@ export function BeerStampRail({
   beers,
   claimedNames,
   matchCounts,
+  initialGenericCount = 0,
 }: {
   matchId: number;
   countryCode: string;
@@ -30,6 +31,8 @@ export function BeerStampRail({
   beers: CountryBeer[];
   claimedNames: Set<string>;
   matchCounts: Map<string, number>;
+  /** Generic "any [country] beer" pours this match (no stamp, +2 WCC each). */
+  initialGenericCount?: number;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -41,8 +44,11 @@ export function BeerStampRail({
     for (const b of beers) o[b.name] = matchCounts.get(b.name) ?? 0;
     return o;
   });
+  const [genericCount, setGenericCount] = useState(initialGenericCount);
+  const GENERIC = "__generic__";
 
-  const totalThisMatch = Object.values(counts).reduce((a, b) => a + b, 0);
+  const stampThisMatch = Object.values(counts).reduce((a, b) => a + b, 0);
+  const totalThisMatch = stampThisMatch + genericCount;
   const accent = colorFor(countryCode);
 
   // Passport progress: a beer is stamped if it was ever logged (lifetime) or
@@ -84,6 +90,36 @@ export function BeerStampRail({
       });
       if ("error" in res) {
         setCounts((c) => ({ ...c, [beer.name]: (c[beer.name] ?? 0) + 1 }));
+        setErr(res.error);
+      }
+      setBusy(null);
+    });
+  }
+
+  // Generic "any other [country] beer": +2 WCC, no stamp (no beer_label).
+  function bumpGenericUp() {
+    setErr(null);
+    setBusy(GENERIC);
+    setGenericCount((c) => c + 1);
+    startTransition(async () => {
+      const res = await pourAction({ matchId, countryCode });
+      if ("error" in res) {
+        setGenericCount((c) => Math.max(0, c - 1));
+        setErr(res.error);
+      }
+      setBusy(null);
+    });
+  }
+
+  function bumpGenericDown() {
+    setErr(null);
+    if (genericCount <= 0) return;
+    setBusy(GENERIC);
+    setGenericCount((c) => Math.max(0, c - 1));
+    startTransition(async () => {
+      const res = await undoLastGenericCountryAction({ matchId, countryCode });
+      if ("error" in res) {
+        setGenericCount((c) => c + 1);
         setErr(res.error);
       }
       setBusy(null);
@@ -306,6 +342,82 @@ export function BeerStampRail({
             </div>
           );
         })}
+        {/* Catch-all: a {country} beer that isn't on the list. Same +2 WCC,
+            but it can't be a specific collectible, so it earns no stamp. */}
+        <div style={{ marginTop: 2 }}>
+          <div className="t-small muted" style={{ textAlign: "center", padding: "2px 0 8px" }}>
+            Drinking a {countryName} beer that&apos;s not listed?
+          </div>
+          <div
+            className="sheet-confirm-row"
+            style={{
+              background: "var(--paper)",
+              borderLeft: `3px dashed ${accent.secondary}`,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+              <span
+                aria-hidden
+                style={{ fontSize: 30, lineHeight: 1, width: 48, textAlign: "center", flex: "0 0 48px" }}
+              >
+                🍺
+              </span>
+              <div style={{ minWidth: 0 }}>
+                <div className="t-sub" style={{ fontSize: 15 }}>
+                  Any other {countryName} beer
+                </div>
+                <div className="t-small muted">
+                  <strong style={{ color: "var(--burn)" }}>+2 WCC</strong> · no 🛂 stamp
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button
+                type="button"
+                className="pour-btn-circle minus"
+                style={{
+                  width: 40,
+                  height: 40,
+                  fontSize: 20,
+                  borderWidth: 1.5,
+                  background: accent.tint2,
+                  borderColor: accent.secondary,
+                  color: accent.ink,
+                }}
+                onClick={bumpGenericDown}
+                disabled={(busy === GENERIC && pending) || genericCount <= 0}
+                aria-label={`Remove one other ${countryName} beer`}
+              >
+                −
+              </button>
+              <span
+                className="tnum"
+                style={{ minWidth: 22, textAlign: "center", fontFamily: "var(--ff-display)", fontWeight: 800, fontSize: 20 }}
+              >
+                {genericCount}
+              </span>
+              <button
+                type="button"
+                className="pour-btn-circle plus"
+                style={{
+                  width: 40,
+                  height: 40,
+                  fontSize: 20,
+                  borderWidth: 1.5,
+                  background: accent.primary,
+                  borderColor: accent.primary,
+                  color: readableInkOn(accent.primary),
+                }}
+                onClick={bumpGenericUp}
+                disabled={busy === GENERIC && pending}
+                aria-label={`Add one other ${countryName} beer`}
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+
         {err ? (
           <div className="t-small" style={{ color: "var(--penalty)", paddingLeft: 4 }}>
             {err}

@@ -91,15 +91,18 @@ export function PourButton({
         </div>
       ) : null}
       <div className="pour-stepper">
-        <button
-          type="button"
-          className="pour-btn-circle minus"
-          onClick={minus}
-          disabled={pending || basicCount <= 0}
-          aria-label="Remove last basic drink"
-        >
-          −1
-        </button>
+        <div className="pour-step">
+          <button
+            type="button"
+            className="pour-btn-circle minus"
+            onClick={minus}
+            disabled={pending || basicCount <= 0}
+            aria-label="Remove last basic drink"
+          >
+            −1
+          </button>
+          <span className="pour-step-label">Undo</span>
+        </div>
         <div className="core">
           <div className="label-row">
             <WccIcon size={16} /> WCC this match
@@ -116,19 +119,22 @@ export function PourButton({
           </div>
           <div className="sub-meta tnum">{matchTotal} drinks · {totalDrinks} all-time</div>
         </div>
-        <button
-          ref={plusRef}
-          type="button"
-          className="pour-btn-circle plus"
-          onClick={plus}
-          disabled={pending}
-          aria-label="Log a basic drink"
-        >
-          +1
-        </button>
+        <div className="pour-step">
+          <button
+            ref={plusRef}
+            type="button"
+            className="pour-btn-circle plus"
+            onClick={plus}
+            disabled={pending}
+            aria-label="Log a basic drink"
+          >
+            +1
+          </button>
+          <span className="pour-step-label">🍺 Drink</span>
+        </div>
       </div>
       <div className="t-small muted" style={{ textAlign: "center" }}>
-        +1 / −1 tracks <strong>basic</strong> drinks. Use the country section below for specific beers.
+        Tap <strong>Drink</strong> for each one you have (+1 WCC). Specific country beers are below.
       </div>
       {err ? (
         <div className="t-small" style={{ color: "var(--penalty)", textAlign: "center" }}>

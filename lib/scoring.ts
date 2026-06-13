@@ -99,9 +99,13 @@ export function wccTotal(drinks: DrinkRow[], picks: PickRow[]): number {
   return earned - stakesSpent + refunds + winnings + depthBonus + breadth;
 }
 
+/** Distinct countries the user has a real passport stamp in. A stamp requires
+ *  a specific beer_label - a generic "any country beer" (country tagged, no
+ *  label) earns +2 WCC but does NOT count here, toward the passport, or toward
+ *  the breadth bonus. Mirrors the beer_label filter in scripts/007. */
 export function stampSet(drinks: DrinkRow[]): Set<string> {
   const s = new Set<string>();
-  for (const d of drinks) if (d.country_code) s.add(d.country_code);
+  for (const d of drinks) if (d.country_code && d.beer_label) s.add(d.country_code);
   return s;
 }
 

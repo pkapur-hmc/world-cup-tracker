@@ -229,6 +229,34 @@ export async function getUserBeerCountsForMatch(
   return counts;
 }
 
+/** Per-match counts of GENERIC country beers (country tagged, no specific
+ *  beer_label) keyed by country. These earn +2 WCC but no passport stamp, so
+ *  they're tracked separately from the stampable per-label counts. */
+export async function getUserGenericCountryCounts(
+  userId: string,
+  matchId: number,
+  countryCodes?: string[],
+): Promise<Map<string, number>> {
+  const supabase = await createClient();
+  let q = supabase
+    .from("wc_drinks")
+    .select("country_code")
+    .eq("user_id", userId)
+    .eq("match_id", matchId)
+    .is("beer_label", null)
+    .not("country_code", "is", null);
+  if (countryCodes && countryCodes.length > 0) {
+    q = q.in("country_code", countryCodes);
+  }
+  const { data } = await q;
+  const counts = new Map<string, number>();
+  for (const d of (data ?? []) as { country_code: string | null }[]) {
+    if (!d.country_code) continue;
+    counts.set(d.country_code, (counts.get(d.country_code) ?? 0) + 1);
+  }
+  return counts;
+}
+
 /** Country-beer drinks a user has done lifetime, keyed by country (for the
  *  stamp picker + passport progress). Per-country because beer names repeat
  *  across countries (Brahma, Skol, Heineken...) - a Brazil Brahma must not

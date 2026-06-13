@@ -10,6 +10,7 @@ import {
   getWatchingForUsersInMatch,
   getUserStampedBeers,
   getUserBeerCountsForMatch,
+  getUserGenericCountryCounts,
 } from "@/lib/picks";
 import { FLAG_EMOJI } from "@/data/flag-emojis";
 import { COUNTRY_BEERS } from "@/data/country-beers";
@@ -577,20 +578,24 @@ async function LiveView({
     role: m.role,
   }));
   const memberIds = crossBracketMembers.map((m) => m.userId);
-  const [stats, picks, earnings, watching, stampedBeers, beerCounts] = await Promise.all([
+  const [stats, picks, earnings, watching, stampedBeers, beerCounts, genericCounts] = await Promise.all([
     getMemberStats("", userId),
     getPicksForUsersInMatch(memberInput, match.id),
     getMatchEarningsForUsers(memberIds, match.id),
     getWatchingForUsersInMatch(memberIds, match.id),
     getUserStampedBeers(userId),
     getUserBeerCountsForMatch(userId, match.id, teamCodes),
+    getUserGenericCountryCounts(userId, match.id, teamCodes),
   ]);
 
   const myPick = picks.find((p) => p.userId === userId);
   const myDrinks = Number(earnings.get(userId)?.drinks ?? 0);
-  const myBeerCountThisMatch = Number(
-    Array.from(beerCounts.values()).reduce((a, b) => Number(a) + Number(b), 0),
-  );
+  // "Country" = stampable beers logged + generic country beers (both +2 WCC);
+  // basic is whatever's left. Generic beers don't earn stamps but still count
+  // as country beers for the WCC breakdown.
+  const myStampBeerCount = Array.from(beerCounts.values()).reduce((a, b) => Number(a) + Number(b), 0);
+  const myGenericCount = Array.from(genericCounts.values()).reduce((a, b) => Number(a) + Number(b), 0);
+  const myBeerCountThisMatch = Number(myStampBeerCount) + Number(myGenericCount);
   const myBasicCountThisMatch = Math.max(
     0,
     (Number.isFinite(myDrinks) ? myDrinks : 0) -
@@ -696,6 +701,7 @@ async function LiveView({
             beers={beersA}
             claimedNames={stampedBeers.get(match.team_a_code) ?? new Set()}
             matchCounts={beerCounts}
+            initialGenericCount={genericCounts.get(match.team_a_code) ?? 0}
           />
         ) : null}
 
@@ -708,6 +714,7 @@ async function LiveView({
             beers={beersB}
             claimedNames={stampedBeers.get(match.team_b_code) ?? new Set()}
             matchCounts={beerCounts}
+            initialGenericCount={genericCounts.get(match.team_b_code) ?? 0}
           />
         ) : null}
 
