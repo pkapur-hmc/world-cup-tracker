@@ -81,11 +81,16 @@ export function PourButton({
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       {isFirstEver ? (
         <div className="first-pour-hint">
-          <span aria-hidden style={{ fontSize: 18 }}>🍺</span>
+          <span aria-hidden style={{ fontSize: 18 }}>
+            🍺
+          </span>
           <div>
-            <div className="t-sub" style={{ fontSize: 13 }}>Your first pour earns +1 WCC.</div>
+            <div className="t-sub" style={{ fontSize: 13 }}>
+              Log any drink you&apos;re drinking — +1 WCC each.
+            </div>
             <div className="t-small muted">
-              Try a country beer below for +2 WCC and a 🛂 passport stamp.
+              Drinking a specific country&apos;s beer? Tap the section below for
+              +2 WCC + 🛂 stamp.
             </div>
           </div>
         </div>
@@ -110,14 +115,16 @@ export function PourButton({
           <div className="big-num tnum">{matchWcc}</div>
           <div className="match-breakdown tnum">
             <span className={basicCount > 0 ? "" : "dim"}>
-              <span className="bd-dot bd-basic" /> +{basicCount} basic
+              <span className="bd-dot bd-basic" /> +{basicCount} any drink
             </span>
             <span className="bd-sep">·</span>
             <span className={country > 0 ? "" : "dim"}>
               <span className="bd-dot bd-country" /> +{country * 2} country
             </span>
           </div>
-          <div className="sub-meta tnum">{matchTotal} drinks · {totalDrinks} all-time</div>
+          <div className="sub-meta tnum">
+            {matchTotal} drinks · {totalDrinks} all-time
+          </div>
         </div>
         <div className="pour-step">
           <button
@@ -126,18 +133,22 @@ export function PourButton({
             className="pour-btn-circle plus"
             onClick={plus}
             disabled={pending}
-            aria-label="Log a basic drink"
+            aria-label="Log one non-country beer"
           >
             +1
           </button>
-          <span className="pour-step-label">🍺 Drink</span>
+          <span className="pour-step-label">🍺 Any Drink</span>
         </div>
       </div>
       <div className="t-small muted" style={{ textAlign: "center" }}>
-        Tap <strong>Drink</strong> for each one you have (+1 WCC). Specific country beers are below.
+        <strong>Any drink</strong> = +1 WCC. Drinking a specific country&apos;s
+        beer? Use the section below for +2 WCC.
       </div>
       {err ? (
-        <div className="t-small" style={{ color: "var(--penalty)", textAlign: "center" }}>
+        <div
+          className="t-small"
+          style={{ color: "var(--penalty)", textAlign: "center" }}
+        >
           {err}
         </div>
       ) : null}
