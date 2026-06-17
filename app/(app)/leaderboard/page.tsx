@@ -201,7 +201,7 @@ export default async function LeaderboardPage({
                   {labels.get(r.userId) ? (
                     <div className="flavor">{labels.get(r.userId)}</div>
                   ) : null}
-                  <div className="mini-stats tnum" style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <div className="mini-stats tnum" style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden", fontSize: 11 }}>
                     <span>🍻 {r.stats.drinks}</span>
                     <span>·</span>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><WccIcon size={11} /> {r.stats.wcc}</span>
