@@ -192,7 +192,7 @@ export default async function LeaderboardPage({
                 key={r.userId}
                 href={`/leaderboard/${r.userId}`}
                 className={`lb-row ${isTop ? "top" : ""} ${isYou ? "you" : ""}`}
-                style={{ textDecoration: "none", color: "inherit", display: "flex" }}
+                style={{ textDecoration: "none", color: "inherit" }}
               >
                 <span className="rank">{r.rank}</span>
                 <div className="avatar">{r.displayName.slice(0, 1).toUpperCase()}</div>
