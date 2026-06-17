@@ -188,9 +188,11 @@ export default async function LeaderboardPage({
             const isYou = r.userId === member.userId;
             const isTop = r.rawRank <= 3;
             return (
-              <div
+              <Link
                 key={r.userId}
+                href={`/leaderboard/${r.userId}`}
                 className={`lb-row ${isTop ? "top" : ""} ${isYou ? "you" : ""}`}
+                style={{ textDecoration: "none", color: "inherit", display: "flex" }}
               >
                 <span className="rank">{r.rank}</span>
                 <div className="avatar">{r.displayName.slice(0, 1).toUpperCase()}</div>
@@ -216,7 +218,7 @@ export default async function LeaderboardPage({
                   {sort === "stamps" ? <span aria-hidden style={{ fontSize: 18 }}>🛂</span> : null}
                   {sortVal(r)}
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
