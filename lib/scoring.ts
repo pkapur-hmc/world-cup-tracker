@@ -147,12 +147,10 @@ export function assignFlavorLabels(
   const labels = new Map<string, string>();
   if (rows.length === 0) return labels;
 
-  const smartEligible = rows.filter((r) => r.picksMade >= 5);
+  const smartEligible = rows.filter((r) => r.picksCorrect > 0);
   if (smartEligible.length > 0) {
     const smart = smartEligible.reduce((best, r) =>
-      r.picksCorrect / r.picksMade > best.picksCorrect / best.picksMade
-        ? r
-        : best,
+      r.picksCorrect > best.picksCorrect ? r : best,
     );
     labels.set(smart.userId, "the smart one");
   }
