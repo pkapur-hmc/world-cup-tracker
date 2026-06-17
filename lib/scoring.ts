@@ -91,7 +91,7 @@ export function wccTotal(drinks: DrinkRow[], picks: PickRow[]): number {
     (s, d) => s + (d.country_code ? COUNTRY_BEER_WCC : 1),
     0,
   );
-  const stakesSpent = picks.reduce((s, p) => s + p.stake, 0);
+  const stakesSpent = picks.reduce((s, p) => s + (p.settled_at ? p.stake : 0), 0);
   const refunds = picks.reduce((s, p) => s + p.payout_wcc, 0);
   const winnings = picks.reduce((s, p) => s + p.payout_wcp, 0);
   const depthBonus = completedPassports(drinks).size * PASSPORT_COMPLETE_WCC;
