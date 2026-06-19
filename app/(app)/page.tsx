@@ -77,7 +77,10 @@ function LiveHero({ match, myPick }: { match: Match; myPick: MyPick }) {
   return (
     <Link href={`/match/${match.id}`} className="hero-action live" style={cardStyle}>
       <div className="hero-tag">
-        <span className="badge live"><span className="dot" />Live</span>
+        <span className="badge live">
+          <span className="dot" />
+          {match.live_minute ?? "Live"}
+        </span>
         <span className="hero-tag-meta">{stageLabel(match)}</span>
       </div>
       <div className="hero-score">

@@ -113,8 +113,18 @@ export async function GET(request: Request) {
     live: 1,
     final: 2,
   };
+  // Stamp every row with this tick's time so updated_at becomes a real
+  // "last synced at" (the column has no trigger; default now() only fires on
+  // insert). live_minute starts null and is filled by the ESPN overlay below
+  // for in-play matches - a row that's no longer live gets null, clearing any
+  // stale minute.
+  const syncedAtIso = new Date(startedAt).toISOString();
   const matchRows = fdMatches.map((m) => {
-    const row = toMatchRow(m);
+    const row = {
+      ...toMatchRow(m),
+      live_minute: null as string | null,
+      updated_at: syncedAtIso,
+    };
     const ex = dbScores.get(row.id);
     if (!ex) return row;
     if (
@@ -175,6 +185,11 @@ export async function GET(request: Request) {
         row.score_a = a;
         row.score_b = b;
         espnOverlays++;
+      }
+      // Capture the in-play clock so the match page can show "64' · synced Nm
+      // ago". Only while still in play; a finished row keeps it null.
+      if (ev.state === "in" && ev.minute) {
+        row.live_minute = ev.minute;
       }
       if (ev.state === "post" && row.status !== "postponed") {
         row.status = "final";

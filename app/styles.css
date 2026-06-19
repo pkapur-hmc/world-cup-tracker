@@ -924,6 +924,39 @@ html, body {
 .badge.stake { background: var(--pour); color: var(--stout); }
 .badge.pick { background: var(--bubble); color: var(--stout); border: 1px solid var(--stout-12); }
 
+/* live match clock: synced in-play minute + how long ago we synced it */
+.live-minute {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.live-minute-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  background: var(--live);
+  color: #FFFEF2;
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.live-minute-clock .lm-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: #FFFEF2;
+  animation: livePulse 1.4s ease-in-out infinite;
+}
+.live-minute-ago {
+  font-family: var(--ff-ui);
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--stout-55);
+}
+
 /* ---------- Avatars (initial circle, seeded) ---------- */
 .avatar {
   width: 36px; height: 36px;

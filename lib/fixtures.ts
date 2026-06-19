@@ -19,10 +19,14 @@ export type Match = {
   score_a: number | null;
   score_b: number | null;
   winner_code: string | null;
+  /** In-play clock label at last sync ("64'", "HT"); null unless live. */
+  live_minute: string | null;
+  /** Last time the sync cron wrote this row - drives "synced Nm ago". */
+  updated_at: string;
 };
 
 const SELECT =
-  "id,stage,group_letter,team_a_code,team_b_code,kickoff_at,venue,status,score_a,score_b,winner_code";
+  "id,stage,group_letter,team_a_code,team_b_code,kickoff_at,venue,status,score_a,score_b,winner_code,live_minute,updated_at";
 
 /**
  * First real kickoff of the 2026 tournament (match 537327, MEX vs RSA).

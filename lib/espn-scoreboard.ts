@@ -25,12 +25,18 @@ export type EspnScore = {
   state: "in" | "post";
   homeScore: number;
   awayScore: number;
+  /** In-play clock label as ESPN renders it: "64'", "45'+2", "HT". Null when
+   *  not live or ESPN omits it. Used to show how far the synced data has got. */
+  minute: string | null;
 };
 
 type EspnScoreboard = {
   events?: Array<{
     date: string;
-    status?: { type?: { state?: string } };
+    status?: {
+      displayClock?: string;
+      type?: { state?: string; shortDetail?: string };
+    };
     competitions?: Array<{
       competitors?: Array<{
         homeAway?: string;
@@ -62,6 +68,14 @@ export async function fetchEspnScores(): Promise<EspnScore[]> {
     if (!Number.isFinite(homeScore) || !Number.isFinite(awayScore)) continue;
     const kickoffMs = Date.parse(e.date);
     if (Number.isNaN(kickoffMs)) continue;
+    // Only meaningful in-play. shortDetail ("64'", "HT") reads cleaner than the
+    // raw displayClock; fall back to the clock if shortDetail is absent.
+    const minute =
+      state === "in"
+        ? (e.status?.type?.shortDetail?.trim() ||
+            e.status?.displayClock?.trim() ||
+            null)
+        : null;
     out.push({
       homeCode: CODE_ALIASES[home.team.abbreviation] ?? home.team.abbreviation,
       awayCode: CODE_ALIASES[away.team.abbreviation] ?? away.team.abbreviation,
@@ -69,6 +83,7 @@ export async function fetchEspnScores(): Promise<EspnScore[]> {
       state,
       homeScore,
       awayScore,
+      minute,
     });
   }
   return out;

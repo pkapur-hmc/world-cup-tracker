@@ -15,8 +15,10 @@ import {
 import { FLAG_EMOJI } from "@/data/flag-emojis";
 import { COUNTRY_BEERS } from "@/data/country-beers";
 import { colorFor } from "@/data/country-colors";
+import { beerNeedsFor } from "@/lib/beer-needs";
 import { PourButton } from "./PourButton";
 import { BeerStampRail } from "./BeerStampRail";
+import { LiveMinute } from "./LiveMinute";
 import { WatchingNow, type WatchingMember } from "./WatchingNow";
 import { PeoplePanelTabs } from "./PeoplePanelTabs";
 import { PickAndStake } from "./PickAndStake";
@@ -251,6 +253,8 @@ function MatchHero({
             <LocalTime iso={match.kickoff_at} mode="dayLong" /> · <LocalTime iso={match.kickoff_at} mode="time" />
           </div>
         </>
+      ) : phase === "live" && match.status !== "final" ? (
+        <LiveMinute minute={match.live_minute} updatedAt={match.updated_at} />
       ) : match.status === "final" ? (
         <div className="t-small muted" style={{ marginTop: 14 }}>Final</div>
       ) : null}
@@ -745,6 +749,56 @@ async function LiveView({
   );
 }
 
+/**
+ * Plan-ahead beer card: for each side with curated beers, the ones the user
+ * still needs (lifetime). Shown pre-match so people know what to grab before
+ * kickoff; logging still happens on the live rails for +2 WCC + a stamp.
+ */
+function MatchBeerPlan({
+  match,
+  stampedBeers,
+}: {
+  match: Match;
+  stampedBeers: Map<string, Set<string>>;
+}) {
+  const teams = [match.team_a_code, match.team_b_code]
+    .filter((c): c is string => !!c)
+    .filter((code) => (COUNTRY_BEERS[code]?.length ?? 0) > 0);
+  if (teams.length === 0) return null;
+  return (
+    <div className="card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className="caps-label">🍺 Beers to try · plan ahead</div>
+      {teams.map((code) => {
+        const needs = beerNeedsFor(code, stampedBeers.get(code));
+        const accent = colorFor(code);
+        return (
+          <div key={code} style={{ borderLeft: `3px solid ${accent.primary}`, paddingLeft: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span aria-hidden style={{ fontSize: 20, lineHeight: 1 }}>{flag(code)}</span>
+              <span className="t-sub" style={{ fontSize: 15 }}>{countryName(code)}</span>
+              <span className="t-small muted tnum">{needs.done}/{needs.total} 🛂</span>
+            </div>
+            {needs.needed.length === 0 ? (
+              <div className="t-small" style={{ color: accent.ink, fontWeight: 700, marginTop: 4 }}>
+                ✓ passport complete - all {needs.total} collected
+              </div>
+            ) : (
+              <div className="beer-need-chips">
+                {needs.needed.map((b) => (
+                  <span key={b.name} className="beer-need-chip">{b.name}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      <div className="t-small muted">
+        Log these during the match for <strong>+2 WCC</strong> + a 🛂 stamp each.
+      </div>
+    </div>
+  );
+}
+
 async function PreView({
   match,
   userId,
@@ -758,9 +812,10 @@ async function PreView({
     displayName: m.displayName,
     role: m.role,
   }));
-  const [stats, picks] = await Promise.all([
+  const [stats, picks, stampedBeers] = await Promise.all([
     getMemberStats("", userId),
     getPicksForUsersInMatch(memberInput, match.id),
+    getUserStampedBeers(userId),
   ]);
   const my = picks.find((p) => p.userId === userId);
   const isKnockout = match.stage !== "group";
@@ -821,6 +876,8 @@ async function PreView({
             <div className="empty-sub">Knockout picks open after group stage wraps.</div>
           </div>
         )}
+
+        <MatchBeerPlan match={match} stampedBeers={stampedBeers} />
 
         <GroupPicksList picks={picks} match={match} />
         <div style={{ height: 16 }} />
