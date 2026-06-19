@@ -291,6 +291,7 @@ function StatusCard({
   wcc,
   drinks,
   stamps,
+  beers,
   rank,
   total,
   bracketName,
@@ -299,14 +300,20 @@ function StatusCard({
   wcc: number;
   drinks: number;
   stamps: number;
+  beers: number;
   rank: number | null;
   total: number | null;
   bracketName: string | null;
   bracketCount: number;
 }) {
+  // The whole card deep-links into Schedule's Past tab, where the WCC breakdown
+  // (picks hit, pours, stamps) lives - so a tap on "Your cup" shows how it adds up.
   return (
-    <div className="status-card">
-      <div className="status-eyebrow">Your cup</div>
+    <Link href="/schedule?view=past" className="status-card status-card-link">
+      <div className="status-eyebrow">
+        Your cup
+        <span className="status-cta" aria-hidden>See the breakdown ›</span>
+      </div>
       <div className="status-wcc-row">
         <span className="status-wcc tnum">{wcc}</span>
         <span className="status-wcc-unit">
@@ -331,7 +338,7 @@ function StatusCard({
           <span className="ss-label">Drinks</span>
         </div>
         <div className="status-substat">
-          <span className="ss-num tnum">{stamps}</span>
+          <span className="ss-num tnum">{beers}</span>
           <span className="ss-label">Stamps</span>
         </div>
         <div className="status-substat">
@@ -339,7 +346,7 @@ function StatusCard({
           <span className="ss-label">Passport</span>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -458,6 +465,7 @@ export default async function HomePage() {
         wcc={stats.wcc}
         drinks={stats.drinks}
         stamps={stats.stamps}
+        beers={stats.distinctBeers}
         rank={soloRank?.rank ?? null}
         total={soloRank?.total ?? null}
         bracketName={soloBracket?.groupName ?? null}

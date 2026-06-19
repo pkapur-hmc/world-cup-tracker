@@ -314,6 +314,14 @@ html, body {
     0 1px 0 rgba(255, 255, 255, 0.7) inset,
     0 1px 2px rgba(40, 22, 4, 0.04);
 }
+.status-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease;
+}
+.status-card-link:active { transform: scale(0.992); }
 .status-card .status-eyebrow {
   font-family: var(--ff-ui);
   font-weight: 700;
@@ -322,6 +330,17 @@ html, body {
   text-transform: uppercase;
   color: var(--stout-55);
   margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.status-card .status-cta {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-weight: 700;
+  color: var(--burn);
 }
 .status-card .status-wcc-row {
   display: inline-flex;

@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { inviteUrlFor } from "@/lib/origin";
+import { inviteShareText } from "@/lib/origin";
 import type { GroupMembershipSummary } from "@/lib/membership";
 
 export function GroupsList({ groups }: { groups: GroupMembershipSummary[] }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   async function shareOrCopy(g: GroupMembershipSummary) {
-    const url = inviteUrlFor(g.inviteCode);
-    const text = `Hop into "${g.groupName}" - our World Cup 2026 bracket: ${url}`;
+    const text = inviteShareText(g.groupName, g.inviteCode);
     try {
       if (typeof navigator !== "undefined" && "share" in navigator) {
         await navigator.share({ text });

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getRankInGroup } from "@/lib/stats";
+import { ViewBracketLink } from "./ViewBracketLink";
 
 export async function BracketStandings({
   brackets,
@@ -69,13 +70,7 @@ export async function BracketStandings({
                   {r.aheadName ? ` · ${r.aheadName} ahead` : r.rank === 1 ? " · top of the pile" : ""}
                 </div>
               </div>
-              <Link
-                href="/leaderboard"
-                className="t-small"
-                style={{ color: "var(--burn)", fontWeight: 700, textDecoration: "none" }}
-              >
-                View →
-              </Link>
+              <ViewBracketLink groupId={b.groupId} />
             </div>
           );
         })}
