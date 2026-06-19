@@ -1,8 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LoginForm } from "@/components/login-form";
+import { JoinConfirm } from "./JoinConfirm";
 
 export default async function JoinByCode({
   params,
@@ -15,10 +15,6 @@ export default async function JoinByCode({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) {
-    // Already signed in - hop to onboarding with the code prefilled.
-    redirect(`/onboarding?code=${encodeURIComponent(code)}`);
-  }
 
   // RLS gates wc_groups SELECT to existing members, so a fresh joiner can't
   // peek by invite_code via the table. peek_invite is a security-definer RPC
@@ -46,14 +42,31 @@ export default async function JoinByCode({
             </div>
           ) : (
             <div className="t-small muted">
-              That code doesn&apos;t ring a bell, but you can still sign in to join a group.
+              That code doesn&apos;t ring a bell{user ? "." : ", but you can still sign in to join a group."}
             </div>
           )}
         </div>
-        <LoginForm redirectTo={`/onboarding?code=${encodeURIComponent(code)}`} />
-        <Link href="/welcome" className="t-small muted" style={{ textAlign: "center", textDecoration: "none" }}>
-          Just looking around →
-        </Link>
+
+        {user ? (
+          groupName ? (
+            // Signed in already: skip the form, just confirm-join in one tap.
+            <JoinConfirm code={code} />
+          ) : (
+            <Link href="/" className="btn secondary block" style={{ textAlign: "center" }}>
+              Back to my brackets
+            </Link>
+          )
+        ) : (
+          <>
+            {/* After auth, come back HERE (not onboarding) so returning users get
+                the one-tap confirm and new signups - who set a name at signup -
+                land on the same confirm step. */}
+            <LoginForm redirectTo={`/join/${encodeURIComponent(code)}`} />
+            <Link href="/welcome" className="t-small muted" style={{ textAlign: "center", textDecoration: "none" }}>
+              Just looking around →
+            </Link>
+          </>
+        )}
       </div>
     </main>
   );

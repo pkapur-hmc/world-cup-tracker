@@ -4,7 +4,12 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingForm } from "./onboarding-form";
 
-export default async function OnboardingPage() {
+export default async function OnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ code?: string }>;
+}) {
+  const { code } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -14,13 +19,14 @@ export default async function OnboardingPage() {
 
   // Onboarding is for first-time joiners only. Existing users adding more
   // brackets use /brackets/new instead - that route reuses the same form
-  // but skips the display-name prompt.
+  // but skips the display-name prompt. Carry any invite code through so the
+  // form arrives prefilled instead of dropping it.
   const { data: memberships } = await supabase
     .from("wc_memberships")
     .select("group_id")
     .limit(1);
   if (memberships && memberships.length > 0) {
-    redirect("/brackets/new");
+    redirect(code ? `/brackets/new?code=${encodeURIComponent(code)}` : "/brackets/new");
   }
 
   return (
