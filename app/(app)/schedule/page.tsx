@@ -139,7 +139,7 @@ export default async function SchedulePage({
                 <div className="stat-label">Picks hit</div>
               </div>
               <div className="stat-cell">
-                <div className="stat-num">{stats.stamps}</div>
+                <div className="stat-num">{stats.distinctBeers}</div>
                 <div className="stat-label">Stamps</div>
               </div>
               <div className="stat-cell">

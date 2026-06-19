@@ -114,7 +114,7 @@ export default async function LeaderboardPage({
   const sortVal = (r: LeaderboardRow): number => {
     switch (sort) {
       case "drinks": return r.stats.drinks;
-      case "stamps": return r.stats.stamps;
+      case "stamps": return r.stats.distinctBeers;
       case "picks": return r.picksCorrect;
       default: return r.stats.wcc;
     }
@@ -206,7 +206,7 @@ export default async function LeaderboardPage({
                     <span>·</span>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><WccIcon size={11} /> {r.stats.wcc}</span>
                     <span>·</span>
-                    <span>🛂 {r.stats.stamps}</span>
+                    <span>🛂 {r.stats.distinctBeers}</span>
                     <span>·</span>
                     <span>🎯 {r.picksCorrect}</span>
                   </div>

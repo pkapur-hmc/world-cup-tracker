@@ -49,7 +49,13 @@ export type PickRow = {
 export type MemberStats = {
   drinks: number;
   wcc: number;
+  /** Distinct COUNTRIES stamped (one per country). Drives the X/48 passport
+   *  progress and the breadth bonus. */
   stamps: number;
+  /** Distinct BEERS collected: unique (country, beer_label) pairs. Each specific
+   *  country beer counts once; repeats and generic country pours don't add. This
+   *  is the "Stamps" number shown on the leaderboard / status cards. */
+  distinctBeers: number;
   /** Countries whose passport is complete (every listed beer stamped). */
   passports: number;
 };
@@ -109,6 +115,18 @@ export function stampSet(drinks: DrinkRow[]): Set<string> {
   return s;
 }
 
+/** Total distinct passport stamps collected = unique (country, beer_label)
+ *  pairs. Three different Korean beers count as 3; the same Korean beer twice
+ *  counts as 1. Generic country pours (no beer_label) don't count. This is the
+ *  "Stamps" number on the leaderboard - purely a display tally, separate from
+ *  the breadth bonus, which still rides on distinct countries (stampSet). */
+export function distinctStampsCount(drinks: DrinkRow[]): number {
+  const s = new Set<string>();
+  for (const d of drinks)
+    if (d.country_code && d.beer_label) s.add(`${d.country_code}|${d.beer_label}`);
+  return s.size;
+}
+
 export function computeMemberStats(
   drinks: DrinkRow[],
   picks: PickRow[],
@@ -117,6 +135,7 @@ export function computeMemberStats(
     drinks: drinksCount(drinks),
     wcc: wccTotal(drinks, picks),
     stamps: stampSet(drinks).size,
+    distinctBeers: distinctStampsCount(drinks),
     passports: completedPassports(drinks).size,
   };
 }
@@ -156,9 +175,9 @@ export function assignFlavorLabels(
   }
 
   const tourist = rows.reduce((best, r) =>
-    r.stats.stamps > best.stats.stamps ? r : best,
+    r.stats.distinctBeers > best.stats.distinctBeers ? r : best,
   );
-  if (tourist.stats.stamps >= 4 && !labels.has(tourist.userId)) {
+  if (tourist.stats.distinctBeers >= 4 && !labels.has(tourist.userId)) {
     labels.set(tourist.userId, "the tourist");
   }
 
