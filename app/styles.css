@@ -1583,6 +1583,92 @@ html, body {
 .pour-btn-circle.minus:active { transform: scale(0.96); }
 .pour-btn-circle[disabled] { opacity: 0.4; cursor: not-allowed; }
 
+/* primary "log a drink" launcher - the headline tap target on a match.
+   Mirrors .country-beer-launcher's shape so the two read as a set, but in
+   amber with a solid border so it clearly leads. */
+.log-drink-launcher {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  background: var(--pour);
+  border: 2px solid var(--stout);
+  cursor: pointer;
+  font: inherit;
+  color: var(--stout);
+  text-align: left;
+  width: 100%;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 2px 4px rgba(40, 22, 4, 0.08);
+  transition: transform 140ms ease, background 140ms ease;
+}
+.log-drink-launcher:hover { background: var(--honey); }
+.log-drink-launcher:active { transform: scale(0.99); background: var(--honey); }
+.log-drink-launcher[disabled] { opacity: 0.5; cursor: not-allowed; }
+.log-drink-launcher .ldl-lead { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.log-drink-launcher .ldl-icon { font-size: 28px; line-height: 1; }
+.log-drink-launcher .ldl-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.log-drink-launcher .ldl-title {
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 19px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.log-drink-launcher .ldl-sub { font-size: 12px; font-weight: 600; color: var(--stout-70); }
+.log-drink-launcher .ldl-add { display: inline-flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.log-drink-launcher .ldl-count {
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--stout);
+}
+.log-drink-launcher .ldl-plus {
+  display: grid;
+  place-items: center;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--stout);
+  color: var(--pour);
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1;
+  transition: transform 140ms ease;
+}
+
+.pour-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 2px;
+}
+.pour-undo {
+  font: inherit;
+  font-family: var(--ff-ui);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--stout-55);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 2px;
+}
+.pour-undo[disabled] { opacity: 0.4; cursor: not-allowed; }
+.pour-readout {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--ff-ui);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--stout-70);
+}
+
 /* country beer launcher button */
 .country-beer-launcher {
   display: flex;

@@ -86,64 +86,55 @@ export function PourButton({
           </span>
           <div>
             <div className="t-sub" style={{ fontSize: 13 }}>
-              Log any drink you&apos;re drinking — +1 WCC each.
+              Drinking right now? Tap below to log it — +1 WCC each.
             </div>
             <div className="t-small muted">
-              Drinking a specific country&apos;s beer? Tap the section below for
+              Drinking a specific country&apos;s beer? Use the section below for
               +2 WCC + 🛂 stamp.
             </div>
           </div>
         </div>
       ) : null}
-      <div className="pour-stepper">
-        <div className="pour-step">
-          <button
-            type="button"
-            className="pour-btn-circle minus"
-            onClick={minus}
-            disabled={pending || basicCount <= 0}
-            aria-label="Remove last basic drink"
-          >
-            −1
-          </button>
-          <span className="pour-step-label">Undo</span>
-        </div>
-        <div className="core">
-          <div className="label-row">
-            <WccIcon size={16} /> WCC this match
-          </div>
-          <div className="big-num tnum">{matchWcc}</div>
-          <div className="match-breakdown tnum">
-            <span className={basicCount > 0 ? "" : "dim"}>
-              <span className="bd-dot bd-basic" /> +{basicCount} any drink
-            </span>
-            <span className="bd-sep">·</span>
-            <span className={country > 0 ? "" : "dim"}>
-              <span className="bd-dot bd-country" /> +{country * 2} country
-            </span>
-          </div>
-          <div className="sub-meta tnum">
-            {matchTotal} drinks · {totalDrinks} all-time
-          </div>
-        </div>
-        <div className="pour-step">
-          <button
-            ref={plusRef}
-            type="button"
-            className="pour-btn-circle plus"
-            onClick={plus}
-            disabled={pending}
-            aria-label="Log one non-country beer"
-          >
-            +1
-          </button>
-          <span className="pour-step-label">🍺 Any Drink</span>
-        </div>
+
+      {/* The primary action on the match: log whatever you're drinking. Built to
+          read like the country-beer launcher below it, but in the headline amber
+          so it's unmistakably THE tap target. The whole card is the button. */}
+      <button
+        type="button"
+        className="log-drink-launcher"
+        onClick={plus}
+        disabled={pending}
+        aria-label="Log one drink (+1 WCC)"
+      >
+        <span className="ldl-lead">
+          <span className="ldl-icon" aria-hidden>🍺</span>
+          <span className="ldl-text">
+            <span className="ldl-title">Log a drink</span>
+            <span className="ldl-sub">Any beer, wine or cocktail · +1 WCC each</span>
+          </span>
+        </span>
+        <span className="ldl-add">
+          {basicCount > 0 ? <span className="ldl-count tnum">×{basicCount}</span> : null}
+          <span className="ldl-plus" ref={plusRef} aria-hidden>+1</span>
+        </span>
+      </button>
+
+      <div className="pour-footer">
+        <button
+          type="button"
+          className="pour-undo"
+          onClick={minus}
+          disabled={pending || basicCount <= 0}
+          aria-label="Undo last logged drink"
+        >
+          ↶ Undo last
+        </button>
+        <span className="pour-readout tnum">
+          <WccIcon size={13} /> {matchWcc} WCC · {matchTotal} drink
+          {matchTotal === 1 ? "" : "s"} this match
+        </span>
       </div>
-      <div className="t-small muted" style={{ textAlign: "center" }}>
-        <strong>Any drink</strong> = +1 WCC. Drinking a specific country&apos;s
-        beer? Use the section below for +2 WCC.
-      </div>
+
       {err ? (
         <div
           className="t-small"
