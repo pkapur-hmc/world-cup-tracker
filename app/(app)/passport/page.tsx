@@ -7,7 +7,9 @@ import { COUNTRY_BEERS } from "@/data/country-beers";
 import { colorFor } from "@/data/country-colors";
 import { CountryBottle } from "@/components/ui/CountryBottle";
 import { LocalTime } from "@/components/ui/LocalTime";
+import { getUpcomingPickableMatches } from "@/lib/fixtures";
 import { PassportBonuses } from "./PassportBonuses";
+import { UpNext, type UpNextMatch } from "./UpNext";
 
 type Stamp = {
   country_code: string;
@@ -65,13 +67,16 @@ export default async function PassportPage() {
   if (!member) return null;
 
   const supabase = await createClient();
-  const { data: stampsData } = await supabase
-    .from("wc_drinks")
-    .select("country_code, beer_label, created_at")
-    .eq("user_id", member.userId)
-    .not("country_code", "is", null)
-    .not("beer_label", "is", null)
-    .order("created_at", { ascending: false });
+  const [{ data: stampsData }, upcoming] = await Promise.all([
+    supabase
+      .from("wc_drinks")
+      .select("country_code, beer_label, created_at")
+      .eq("user_id", member.userId)
+      .not("country_code", "is", null)
+      .not("beer_label", "is", null)
+      .order("created_at", { ascending: false }),
+    getUpcomingPickableMatches(),
+  ]);
 
   const stamps = (stampsData ?? []) as Stamp[];
 
@@ -137,6 +142,34 @@ export default async function PassportPage() {
 
   const countriesStamped = claimed.length + completed.length;
 
+  // Plan-ahead feed: next matches, each side's still-needed beers. Cap the
+  // payload (group-stage days run 4-6 matches); the client shows the first
+  // few days grouped in the viewer's zone. Only sides with curated beers.
+  const upNextMatches: UpNextMatch[] = upcoming
+    .slice(0, 24)
+    .map((m) => {
+      const teams = [m.team_a_code, m.team_b_code]
+        .filter((c): c is string => !!c)
+        .filter((code) => (COUNTRY_BEERS[code] ?? []).length > 0)
+        .map((code) => {
+          const list = COUNTRY_BEERS[code] ?? [];
+          const stampedLabels = progressByCode.get(code)?.stampsByLabel;
+          const needed = list
+            .filter((b) => !stampedLabels?.has(b.name))
+            .map((b) => b.name);
+          return {
+            code,
+            name: NAMES[code] ?? code,
+            flag: flag(code),
+            needed,
+            total: list.length,
+            done: list.length - needed.length,
+          };
+        });
+      return { id: m.id, kickoffAt: m.kickoff_at, teams };
+    })
+    .filter((m) => m.teams.length > 0);
+
   return (
     <>
       <div className="appbar" style={{ alignItems: "flex-start" }}>
@@ -165,6 +198,8 @@ export default async function PassportPage() {
 
       <div className="screen" style={{ gap: 14 }}>
         <PassportBonuses countriesStamped={countriesStamped} completedCount={completed.length} />
+
+        <UpNext matches={upNextMatches} />
 
         {claimedTotal === 0 ? (
           <div className="card empty-block" style={{ textAlign: "center" }}>
