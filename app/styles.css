@@ -894,6 +894,9 @@ html, body {
   transition: background 150ms ease, color 150ms ease;
 }
 .seg-tab.is-active { background: var(--stout); color: var(--foam-lit); border-color: var(--stout); }
+/* the beers planning tab reads as its own thing, not just another schedule view */
+.seg-tab.beers { background: rgba(229, 156, 32, 0.12); border-color: var(--pour); color: var(--burn); }
+.seg-tab.beers.is-active { background: var(--pour); border-color: var(--stout); color: var(--stout); }
 
 .badge {
   display: inline-flex;
