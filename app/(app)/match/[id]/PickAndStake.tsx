@@ -20,6 +20,7 @@ export function PickAndStake({
   flagA,
   flagB,
   availableWcc,
+  committedElsewhere,
   initial,
   locksAt,
 }: {
@@ -29,7 +30,10 @@ export function PickAndStake({
   teamBCode: string;
   flagA: string;
   flagB: string;
+  /** Headline total WCC (does NOT net out pending stakes). */
   availableWcc: number;
+  /** WCC already staked on OTHER unsettled games - can't be re-staked here. */
+  committedElsewhere: number;
   initial: ExistingPick;
   locksAt: string;
 }) {
@@ -50,9 +54,15 @@ export function PickAndStake({
     return () => clearInterval(t);
   }, []);
 
-  // Total budget = available + any existing stake on this match (you can re-allocate it)
-  const budget = availableWcc + (savedPick?.stake ?? 0);
+  // Headline total never moves with the slider. What you can put on THIS match
+  // = total minus what's tied up in other unsettled games; this match's own
+  // existing stake stays re-allocatable (it isn't in committedElsewhere).
+  const totalWcc = availableWcc;
+  const budget = Math.max(0, totalWcc - committedElsewhere);
   const stakeCapped = Math.min(stake, budget);
+  // Total minus everything staked across all games (incl. this slider). This is
+  // the number that responds to the stepper - the headline stays put.
+  const remainingToStake = Math.max(0, budget - stakeCapped);
   const payout = stakeCapped > 0 ? 1 + 2 * stakeCapped : 1;
   const minsToLock = Math.floor((new Date(locksAt).getTime() - now) / 60_000);
   const locked = minsToLock < 0;
@@ -208,11 +218,11 @@ export function PickAndStake({
           <div className="bal-text">
             <div className="t-small muted">You have</div>
             <div className="t-h1 tnum">
-              {budget} <span className="t-small muted">WCC available</span>
+              {totalWcc} <span className="t-small muted">WCC</span>
             </div>
           </div>
           <div className="bal-right t-small muted">
-            {stakeCapped > 0 ? `${budget - stakeCapped} left after this stake` : "tap + to stake"}
+            <span className="tnum">{remainingToStake}</span> remaining to stake
           </div>
         </div>
 

@@ -11,6 +11,7 @@ import {
   getUserStampedBeers,
   getUserBeerCountsForMatch,
   getUserGenericCountryCounts,
+  getUserPicksByMatch,
 } from "@/lib/picks";
 import { FLAG_EMOJI } from "@/data/flag-emojis";
 import { COUNTRY_BEERS } from "@/data/country-beers";
@@ -812,13 +813,22 @@ async function PreView({
     displayName: m.displayName,
     role: m.role,
   }));
-  const [stats, picks, stampedBeers] = await Promise.all([
+  const [stats, picks, stampedBeers, myPicksByMatch] = await Promise.all([
     getMemberStats("", userId),
     getPicksForUsersInMatch(memberInput, match.id),
     getUserStampedBeers(userId),
+    getUserPicksByMatch(userId),
   ]);
   const my = picks.find((p) => p.userId === userId);
   const isKnockout = match.stage !== "group";
+
+  // WCC tied up in your other unsettled stakes - can't be re-staked here. Settled
+  // picks are excluded (their stake is already netted out of stats.wcc).
+  let committedElsewhere = 0;
+  for (const [mid, p] of myPicksByMatch) {
+    if (mid === match.id || p.settled_at) continue;
+    committedElsewhere += p.stake;
+  }
 
   // Hero takes on the picked country's colors, but only once the pick is
   // locked (server-confirmed) - not while the user is still tapping sides.
@@ -867,6 +877,7 @@ async function PreView({
             flagA={flag(match.team_a_code)}
             flagB={flag(match.team_b_code)}
             availableWcc={stats.wcc}
+            committedElsewhere={committedElsewhere}
             initial={my?.pick ? { pick: my.pick, stake: my.stake } : null}
             locksAt={match.kickoff_at}
           />
