@@ -426,6 +426,80 @@ function GroupPicksList({
   );
 }
 
+/**
+ * Pre-kickoff, picks and stakes stay SECRET: revealing them lets someone match
+ * the biggest stake on an easy game right before lock, and lets people copy
+ * each other's calls instead of deciding independently. So pre-match we show
+ * only WHO is locked in (social proof + a nudge to get in) - never what they
+ * picked or staked. The full GroupPicksList reveals everything once the match
+ * goes live and stays open post-match.
+ */
+function ConcealedGroupPicks({
+  picks,
+}: {
+  picks: Awaited<ReturnType<typeof getPicksForUsersInMatch>>;
+}) {
+  const inCount = picks.filter((p) => p.pick).length;
+  const locked = picks
+    .filter((p) => p.pick)
+    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+  const waiting = picks.filter((p) => !p.pick);
+
+  return (
+    <div>
+      <div className="section-label">
+        <span className="caps-label">Group picks</span>
+        <span className="t-small muted">
+          {inCount} of {picks.length} in
+        </span>
+      </div>
+      <div className="card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div
+          className="t-small muted"
+          style={{ display: "flex", alignItems: "center", gap: 6 }}
+        >
+          <span aria-hidden>🔒</span>
+          <span>Picks &amp; stakes are hidden until kickoff - call it on your own.</span>
+        </div>
+        {locked.length > 0 ? (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {locked.map((p) => (
+              <span
+                key={p.userId}
+                className="t-small"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "3px 9px",
+                  borderRadius: "var(--r-pill)",
+                  border: "1px solid var(--stout-12)",
+                  background: "var(--paper)",
+                }}
+              >
+                <span aria-hidden>✓</span>
+                {p.displayName}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div className="t-small muted" style={{ textAlign: "center", padding: "2px 0" }}>
+            No one&apos;s locked in yet.
+          </div>
+        )}
+        {waiting.length > 0 ? (
+          <div
+            className="t-small muted"
+            style={{ borderTop: "1px solid var(--stout-12)", paddingTop: 10 }}
+          >
+            Still deciding · {waiting.map((p) => p.displayName).join(", ")}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function PostMatchSummary({
   match,
   myPick,
@@ -890,7 +964,7 @@ async function PreView({
 
         <MatchBeerPlan match={match} stampedBeers={stampedBeers} />
 
-        <GroupPicksList picks={picks} match={match} />
+        <ConcealedGroupPicks picks={picks} />
         <div style={{ height: 16 }} />
       </div>
     </UnsavedPickProvider>
