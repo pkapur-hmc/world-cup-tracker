@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { placePickAction } from "./actions";
 import { useUnsavedPickGuard } from "./UnsavedPickGuard";
 import { WccIcon } from "@/components/ui/CurrencyIcon";
@@ -96,6 +96,62 @@ export function PickAndStake({
     });
     return () => guard.registerLockPick(null);
   }, [guard, pick, stakeCapped, locked, matchesSaved, matchId]);
+
+  // Press-and-hold ramping for the stake stepper. A pointer-down steps once
+  // immediately, then after a short threshold repeats on an accelerating timer
+  // (slowing toward a 45ms floor). stakeRef mirrors state synchronously so each
+  // repeat reads the latest value without waiting on a re-render, and the loop
+  // self-stops the moment it hits a bound (0 or budget) - important since a
+  // button that disables mid-hold may never fire pointer-up. The trailing click
+  // after a pointer interaction is swallowed; keyboard activation (no pointer)
+  // still steps once via onClick.
+  const holdRef = useRef<{ stop: () => void; pointer: boolean }>({
+    stop: () => {},
+    pointer: false,
+  });
+  const stakeRef = useRef(stake);
+  useEffect(() => {
+    stakeRef.current = stake;
+  }, [stake]);
+  useEffect(() => () => holdRef.current.stop(), []);
+
+  function stepStake(delta: number): boolean {
+    const next = Math.min(budget, Math.max(0, stakeRef.current + delta));
+    if (next === stakeRef.current) return false;
+    stakeRef.current = next;
+    setStake(next);
+    return true;
+  }
+
+  function startHold(delta: number, button = 0) {
+    if (button !== 0) return; // primary button / touch / pen only - not right-click
+    holdRef.current.pointer = true;
+    stepStake(delta);
+    let delay = 400;
+    let timer: ReturnType<typeof setTimeout>;
+    const loop = () => {
+      if (!stepStake(delta)) return; // hit a bound - stop repeating
+      delay = Math.max(45, Math.round(delay * 0.82));
+      timer = setTimeout(loop, delay);
+    };
+    timer = setTimeout(loop, 400);
+    holdRef.current.stop = () => clearTimeout(timer);
+  }
+
+  function endHold() {
+    holdRef.current.stop();
+    holdRef.current.stop = () => {};
+  }
+
+  function clickStake(delta: number) {
+    // Pointer path already stepped on pointer-down; swallow its trailing click.
+    // Keyboard (Enter/Space) fires click with no preceding pointer-down.
+    if (holdRef.current.pointer) {
+      holdRef.current.pointer = false;
+      return;
+    }
+    stepStake(delta);
+  }
 
   function submit() {
     if (!pick) {
@@ -247,7 +303,11 @@ export function PickAndStake({
             <div className="stepper">
               <button
                 type="button"
-                onClick={() => setStake((s) => Math.max(0, s - 1))}
+                onClick={() => clickStake(-1)}
+                onPointerDown={(e) => startHold(-1, e.button)}
+                onPointerUp={endHold}
+                onPointerLeave={endHold}
+                onPointerCancel={endHold}
                 disabled={stake <= 0 || pending || locked}
                 aria-label="Decrease stake"
               >
@@ -256,7 +316,11 @@ export function PickAndStake({
               <span className="value tnum">{stakeCapped}</span>
               <button
                 type="button"
-                onClick={() => setStake((s) => Math.min(budget, s + 1))}
+                onClick={() => clickStake(1)}
+                onPointerDown={(e) => startHold(1, e.button)}
+                onPointerUp={endHold}
+                onPointerLeave={endHold}
+                onPointerCancel={endHold}
                 disabled={stake >= budget || pending || locked}
                 aria-label="Increase stake"
               >
