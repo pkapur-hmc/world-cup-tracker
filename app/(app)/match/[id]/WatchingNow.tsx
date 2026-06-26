@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { watchingPingAction } from "./actions";
 import { WccIcon } from "@/components/ui/CurrencyIcon";
 
 export type WatchingMember = {
@@ -17,24 +16,45 @@ export type WatchingMember = {
 
 export function WatchingNow({
   matchId,
+  groupId,
+  meId,
   userIds,
   initialMembers,
 }: {
   matchId: number;
+  groupId: string;
+  meId: string;
   userIds: string[];
   initialMembers: WatchingMember[];
 }) {
   const [members, setMembers] = useState<WatchingMember[]>(initialMembers);
   const userIdsKey = userIds.join(",");
 
-  // Ping presence on mount + every 60s
+  // Ping presence on mount + every 60s. Writes straight to Supabase from the
+  // browser instead of via a Server Action, so it costs zero Vercel function
+  // CPU. It runs the exact same RLS path the action did: the insert is gated by
+  // `user_id = auth.uid() AND is_group_member(group_id)`, and meId/groupId are
+  // the current user's own membership. Best-effort - a dropped ping only loses
+  // the live "watching" dot, nothing else (never touches picks or stakes).
   useEffect(() => {
-    watchingPingAction(matchId);
-    const ping = setInterval(() => {
-      watchingPingAction(matchId);
-    }, 60_000);
-    return () => clearInterval(ping);
-  }, [matchId]);
+    if (!groupId || !meId) return;
+    const supabase = createClient();
+    const ping = () => {
+      supabase
+        .from("wc_events")
+        .insert({
+          group_id: groupId,
+          user_id: meId,
+          match_id: matchId,
+          kind: "watching",
+          payload: {},
+        })
+        .then(undefined, () => {});
+    };
+    ping();
+    const t = setInterval(ping, 60_000);
+    return () => clearInterval(t);
+  }, [matchId, groupId, meId]);
 
   // Poll for latest watching+drinks every 10s. Cross-bracket: filters by
   // user_id IN (...) instead of by group_id, so you see everyone you've ever

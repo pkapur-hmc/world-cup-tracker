@@ -632,7 +632,7 @@ export default async function MatchPage({
   // Branch by phase (time-driven, not the feed's status flag - see matchPhase).
   const phase = matchPhase(match);
   if (phase === "live") {
-    return <LiveView match={match} userId={member.userId} />;
+    return <LiveView match={match} userId={member.userId} groupId={member.groupId} />;
   }
   if (phase === "post") {
     return <PostView match={match} userId={member.userId} />;
@@ -643,9 +643,11 @@ export default async function MatchPage({
 async function LiveView({
   match,
   userId,
+  groupId,
 }: {
   match: Match;
   userId: string;
+  groupId: string;
 }) {
   const teamCodes = [match.team_a_code, match.team_b_code].filter(
     (c): c is string => !!c,
@@ -805,6 +807,8 @@ async function LiveView({
               content: (
                 <WatchingNow
                   matchId={match.id}
+                  groupId={groupId}
+                  meId={userId}
                   userIds={memberIds}
                   initialMembers={members}
                 />
