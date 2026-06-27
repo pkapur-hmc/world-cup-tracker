@@ -39,6 +39,11 @@ export function PickAndStake({
 }) {
   const [pick, setPick] = useState<"A" | "D" | "B" | null>(initial?.pick ?? null);
   const [stake, setStake] = useState<number>(initial?.stake ?? 0);
+  // Direct text entry for the stake (stakes get large; the stepper alone is
+  // tedious). `stakeDraft` holds what's in the box while it's focused; out of
+  // focus the box just shows the canonical clamped value.
+  const [stakeEditing, setStakeEditing] = useState(false);
+  const [stakeDraft, setStakeDraft] = useState("");
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   // Source of truth for "what's locked in on the server right now". Starts as
@@ -151,6 +156,17 @@ export function PickAndStake({
       return;
     }
     stepStake(delta);
+  }
+
+  // Typed stake: keep digits only, clamp to [0, budget]. The box reflects the
+  // clamp (typing past your budget snaps to the max) and may be momentarily
+  // empty while editing - an empty box commits as 0.
+  function typeStake(raw: string) {
+    const digits = raw.replace(/\D/g, "");
+    const n = digits === "" ? 0 : Math.min(budget, parseInt(digits, 10));
+    setStakeDraft(digits === "" ? "" : String(n));
+    stakeRef.current = n;
+    setStake(n);
   }
 
   function submit() {
@@ -313,7 +329,30 @@ export function PickAndStake({
               >
                 −
               </button>
-              <span className="value tnum">{stakeCapped}</span>
+              <input
+                className="value tnum"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                aria-label="Stake amount"
+                disabled={pending || locked}
+                value={stakeEditing ? stakeDraft : String(stakeCapped)}
+                onFocus={(e) => {
+                  setStakeEditing(true);
+                  setStakeDraft(String(stakeCapped));
+                  e.currentTarget.select();
+                }}
+                onChange={(e) => typeStake(e.target.value)}
+                onBlur={() => setStakeEditing(false)}
+                style={{
+                  width: 64,
+                  border: "none",
+                  background: "transparent",
+                  outline: "none",
+                  padding: 0,
+                  color: "var(--stout)",
+                }}
+              />
               <button
                 type="button"
                 onClick={() => clickStake(1)}
