@@ -36,10 +36,10 @@ const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_
 const COUNTRY_BASE = 2;
 const RESET_FACTOR = 0.4;
 
-// discrete tiers - must mirror scripts/010 wc_refresh_user_scores exactly
+// discrete tiers - must mirror wc_refresh_user_scores (scripts/015: log deficit)
 function tiers(score: number, leader: number) {
   if (leader <= 0) return { beer: 1, passport: 1, stake: 1 };
-  const ratio = Math.max(0, Math.min(1, 1 - score / leader));
+  const ratio = Math.max(0, Math.min(1, 1 - Math.log(Math.max(score, 0) + 1) / Math.log(leader + 1)));
   return {
     beer: Math.max(1, Math.min(10, Math.round(1 + 9 * ratio))),
     passport: 1 + Math.round(8 * ratio) / 2,
