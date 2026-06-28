@@ -67,7 +67,7 @@ export function WatchingNow({
     async function refresh() {
       const sinceIso = new Date(Date.now() - 5 * 60_000).toISOString();
 
-      const [eventsRes, drinksRes] = await Promise.all([
+      const [eventsRes, drinksRes, bonusRes] = await Promise.all([
         supabase
           .from("wc_events")
           .select("user_id")
@@ -78,6 +78,12 @@ export function WatchingNow({
         supabase
           .from("wc_drinks")
           .select("user_id, country_code")
+          .in("user_id", ids)
+          .eq("match_id", matchId),
+        // comeback-multiplier extras earned on this match (tolerant if absent)
+        supabase
+          .from("wc_comeback_bonus")
+          .select("user_id, bonus_wcc")
           .in("user_id", ids)
           .eq("match_id", matchId),
       ]);
@@ -93,6 +99,12 @@ export function WatchingNow({
         cur.wcc += d.country_code ? 2 : 1;
         tally.set(d.user_id, cur);
       }
+      if (!bonusRes.error)
+        for (const r of (bonusRes.data ?? []) as { user_id: string; bonus_wcc: number }[]) {
+          const cur = tally.get(r.user_id) ?? { drinks: 0, wcc: 0 };
+          cur.wcc += Number(r.bonus_wcc);
+          tally.set(r.user_id, cur);
+        }
 
       setMembers((prev) =>
         prev.map((m) => ({

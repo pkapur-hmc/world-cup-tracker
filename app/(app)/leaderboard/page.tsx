@@ -84,11 +84,27 @@ export default async function LeaderboardPage({
     picksByUser.set(u, arr);
   }
 
+  // Comeback-multiplier bonuses + soft-reset adjustments, added on top of the
+  // derived base. Tolerant of the tables not existing yet (pre scripts/010).
+  const extraByUser = new Map<string, number>();
+  if (memberIds.length) {
+    const [cbRes, adjRes] = await Promise.all([
+      supabase.from("wc_comeback_bonus").select("user_id, bonus_wcc").in("user_id", memberIds),
+      supabase.from("wc_score_adjustments").select("user_id, delta").in("user_id", memberIds),
+    ]);
+    if (!cbRes.error)
+      for (const r of (cbRes.data ?? []) as { user_id: string; bonus_wcc: number }[])
+        extraByUser.set(r.user_id, (extraByUser.get(r.user_id) ?? 0) + Number(r.bonus_wcc));
+    if (!adjRes.error)
+      for (const r of (adjRes.data ?? []) as { user_id: string; delta: number }[])
+        extraByUser.set(r.user_id, (extraByUser.get(r.user_id) ?? 0) + Number(r.delta));
+  }
+
   const rows: LeaderboardRow[] = ((members ?? []) as { user_id: string; display_name: string; role: "host" | "member" }[]).map(
     (m) => {
       const myDrinks = drinksByUser.get(m.user_id) ?? [];
       const myPicks = picksByUser.get(m.user_id) ?? [];
-      const stats = computeMemberStats(myDrinks, myPicks);
+      const stats = computeMemberStats(myDrinks, myPicks, extraByUser.get(m.user_id) ?? 0);
       const settled = myPicks.filter((p) => p.settled_at);
       const correct = settled.filter((p) => p.payout_wcp > 0).length;
       // single-match record

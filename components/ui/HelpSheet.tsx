@@ -74,6 +74,39 @@ export function HelpSheet({ open, onClose }: { open: boolean; onClose: () => voi
         <p className="muted">You can stake any WCC you have, including winnings.</p>
       </Section>
 
+      <Section title={<>🔥 Comeback multiplier</>}>
+        <p>
+          The further <strong>behind the leader</strong> you are, the more your
+          drinking pays - so a rough run is recoverable. It only ever <em>adds</em>;
+          the leader is never penalized.
+        </p>
+        <ul>
+          <li>
+            <strong>Country beers</strong> scale up to <strong>×10</strong> (a +2 beer
+            worth up to +20)
+          </li>
+          <li>
+            <strong>Passport bonuses</strong> scale up to <strong>×5</strong> (up to +25)
+          </li>
+          <li>
+            <strong>Correct picks</strong> pay up to <strong>×2</strong> - your rate is
+            locked in when you place the bet
+          </li>
+        </ul>
+        <p className="muted">
+          Your rate is set by your score vs. the leader and eases off as you climb.
+          Basic drinks stay +1.
+        </p>
+      </Section>
+
+      <Section title={<>⚖️ Knockout reset</>}>
+        <p>
+          Once, before the knockout rounds, runaway leads get <strong>squeezed toward
+          the pack</strong> - leaders keep a head start, but it&apos;s catchable. Only
+          the points move; your drinks and stamps are never touched.
+        </p>
+      </Section>
+
       <Section title={<>🏆 Multiple brackets</>}>
         <p>
           You can be in <strong>any number of brackets</strong> at once. Your

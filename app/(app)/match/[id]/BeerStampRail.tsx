@@ -23,6 +23,8 @@ export function BeerStampRail({
   claimedNames,
   matchCounts,
   initialGenericCount = 0,
+  beerMult = 1,
+  passportMult = 1,
 }: {
   matchId: number;
   countryCode: string;
@@ -33,6 +35,10 @@ export function BeerStampRail({
   matchCounts: Map<string, number>;
   /** Generic "any [country] beer" pours this match (no stamp, +2 WCC each). */
   initialGenericCount?: number;
+  /** Comeback multipliers (1x when not behind / feature off). A country beer is
+   *  worth 2*beerMult; a completed passport bonus is worth round(5*passportMult). */
+  beerMult?: number;
+  passportMult?: number;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -50,6 +56,12 @@ export function BeerStampRail({
   const stampThisMatch = Object.values(counts).reduce((a, b) => a + b, 0);
   const totalThisMatch = stampThisMatch + genericCount;
   const accent = colorFor(countryCode);
+
+  // Comeback values: a country beer is worth 2*beerMult, a passport bonus
+  // round(5*passportMult). Half-up to mirror the server (scripts/011).
+  const beerWcc = Math.floor(2 * beerMult + 0.5);
+  const passportWcc = Math.floor(5 * passportMult + 0.5);
+  const hasComeback = beerMult > 1;
 
   // Passport progress: a beer is stamped if it was ever logged (lifetime) or
   // was just logged in this session. Stamping the whole list = +5 WCC bonus.
@@ -145,16 +157,21 @@ export function BeerStampRail({
             <div className="cbl-title">{countryName} beers</div>
             <div className="cbl-sub">
               {passportComplete
-                ? `🛂 ${countryName} passport complete · +5 WCC`
+                ? `🛂 ${countryName} passport complete · +${passportWcc} WCC`
                 : stampsToGo === 1
-                  ? `🛂 ${stampedCount}/${beers.length} collected · 1 more, any match = +5 WCC!`
+                  ? `🛂 ${stampedCount}/${beers.length} collected · 1 more, any match = +${passportWcc} WCC!`
                   : totalThisMatch > 0
-                    ? `+${totalThisMatch * 2} WCC now · 🛂 ${stampedCount}/${beers.length} collected so far`
-                    : `+2 WCC each · collect all ${beers.length} across any match = +5`}
+                    ? `+${totalThisMatch * beerWcc} WCC now · 🛂 ${stampedCount}/${beers.length} collected so far`
+                    : `+${beerWcc} WCC each · collect all ${beers.length} across any match = +${passportWcc}`}
             </div>
           </div>
         </div>
-        <span className="cbl-count">
+        <span className="cbl-count" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          {hasComeback ? (
+            <span className="badge" style={{ background: "var(--pitch)", color: "var(--foam-lit)", fontSize: 9, padding: "2px 6px" }}>
+              ×{beerMult}
+            </span>
+          ) : null}
           {totalThisMatch > 0 ? <>×{totalThisMatch}</> : null}
           <span className="chev">›</span>
         </span>
@@ -178,7 +195,8 @@ export function BeerStampRail({
           }}
         >
           <div className="t-small">
-            Tap + to log, − to remove. Each is <strong>+2 WCC</strong>. Your passport
+            Tap + to log, − to remove. Each is <strong>+{beerWcc} WCC</strong>
+            {hasComeback ? <> (comeback ×{beerMult} — you&apos;re behind, so beers are worth more)</> : null}. Your passport
             keeps every {countryName} beer you log — across <strong>any match, all
             tournament</strong>, so there&apos;s no rush to finish the list tonight.
           </div>
@@ -200,7 +218,7 @@ export function BeerStampRail({
             >
               <span aria-hidden style={{ fontSize: 18 }}>🛂</span>
               <span className="t-sub" style={{ fontSize: 14 }}>
-                Passport complete! <strong>+5 WCC</strong> earned
+                Passport complete! <strong>+{passportWcc} WCC</strong> earned
               </span>
             </div>
           ) : (
@@ -217,7 +235,7 @@ export function BeerStampRail({
                   🛂 Your {countryName} passport · {stampedCount}/{beers.length}
                 </span>
                 <span className="t-small" style={{ fontWeight: 700, color: "var(--burn)" }}>
-                  {stampsToGo === 1 ? "1 more = +5 WCC!" : `all ${beers.length} = +5 WCC`}
+                  {stampsToGo === 1 ? `1 more = +${passportWcc} WCC!` : `all ${beers.length} = +${passportWcc} WCC`}
                 </span>
               </div>
               <div
@@ -367,7 +385,7 @@ export function BeerStampRail({
                   Any other {countryName} beer
                 </div>
                 <div className="t-small muted">
-                  <strong style={{ color: "var(--burn)" }}>+2 WCC</strong> · no 🛂 stamp
+                  <strong style={{ color: "var(--burn)" }}>+{beerWcc} WCC</strong> · no 🛂 stamp
                 </div>
               </div>
             </div>

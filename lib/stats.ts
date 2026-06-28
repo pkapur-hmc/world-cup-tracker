@@ -64,15 +64,93 @@ async function fetchDrinks(
   return (data ?? []) as DrinkRow[];
 }
 
+/** Comeback-multiplier bonuses + soft-reset adjustments for one user. Returns 0
+ *  if those tables don't exist yet (pre scripts/010) - the score is then just
+ *  the derived base, exactly as before. */
+async function fetchExtraWcc(userId: string): Promise<number> {
+  const supabase = await createClient();
+  const [cbRes, adjRes] = await Promise.all([
+    supabase.from("wc_comeback_bonus").select("bonus_wcc").eq("user_id", userId),
+    supabase.from("wc_score_adjustments").select("delta").eq("user_id", userId),
+  ]);
+  const c = !cbRes.error
+    ? (cbRes.data ?? []).reduce((s, r) => s + Number((r as { bonus_wcc: number }).bonus_wcc), 0)
+    : 0;
+  const a = !adjRes.error
+    ? (adjRes.data ?? []).reduce((s, r) => s + Number((r as { delta: number }).delta), 0)
+    : 0;
+  return c + a;
+}
+
+/** Batched version of fetchExtraWcc for a member set (leaderboard / rank). */
+async function fetchExtraWccForUsers(userIds: string[]): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (userIds.length === 0) return out;
+  const supabase = await createClient();
+  const [cbRes, adjRes] = await Promise.all([
+    supabase.from("wc_comeback_bonus").select("user_id, bonus_wcc").in("user_id", userIds),
+    supabase.from("wc_score_adjustments").select("user_id, delta").in("user_id", userIds),
+  ]);
+  if (!cbRes.error)
+    for (const r of (cbRes.data ?? []) as { user_id: string; bonus_wcc: number }[])
+      out.set(r.user_id, (out.get(r.user_id) ?? 0) + Number(r.bonus_wcc));
+  if (!adjRes.error)
+    for (const r of (adjRes.data ?? []) as { user_id: string; delta: number }[])
+      out.set(r.user_id, (out.get(r.user_id) ?? 0) + Number(r.delta));
+  return out;
+}
+
 export async function getMemberStats(
   groupId: string,
   userId: string,
 ): Promise<MemberStats> {
-  const [drinks, picks] = await Promise.all([
+  const [drinks, picks, extra] = await Promise.all([
     fetchDrinks(groupId, userId),
     fetchPicks(groupId, userId),
+    fetchExtraWcc(userId),
   ]);
-  return computeMemberStats(drinks, picks);
+  return computeMemberStats(drinks, picks, extra);
+}
+
+export type UserMultipliers = {
+  beerMult: number;
+  passportMult: number;
+  stakeMult: number;
+  wcc: number;
+  leaderWcc: number;
+};
+
+/** The viewer's current comeback multipliers + score, read from the snapshot
+ *  (wc_user_scores). Defaults to 1x / 0 if the feature isn't live or the user
+ *  has no snapshot row yet. */
+export async function getUserMultipliers(userId: string): Promise<UserMultipliers> {
+  const def: UserMultipliers = { beerMult: 1, passportMult: 1, stakeMult: 1, wcc: 0, leaderWcc: 0 };
+  const supabase = await createClient();
+  const meRes = await supabase
+    .from("wc_user_scores")
+    .select("wcc, beer_mult, passport_mult, stake_mult")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (meRes.error || !meRes.data) return def;
+  const leadRes = await supabase
+    .from("wc_user_scores")
+    .select("wcc")
+    .order("wcc", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const d = meRes.data as {
+    wcc: number;
+    beer_mult: number;
+    passport_mult: number;
+    stake_mult: number;
+  };
+  return {
+    beerMult: Number(d.beer_mult),
+    passportMult: Number(d.passport_mult),
+    stakeMult: Number(d.stake_mult),
+    wcc: Number(d.wcc),
+    leaderWcc: !leadRes.error && leadRes.data ? Number((leadRes.data as { wcc: number }).wcc) : 0,
+  };
 }
 
 /** Rank a member among their group by total. Returns 1-indexed rank + total members. */
@@ -87,13 +165,14 @@ export async function getRankInGroup(
     .eq("group_id", groupId);
   if (!members) return { rank: 1, total: 1 };
 
+  const extras = await fetchExtraWccForUsers(members.map((m) => m.user_id));
   const scored: { userId: string; name: string; total: number }[] = [];
   for (const m of members) {
     const [drinks, picks] = await Promise.all([
       fetchDrinks(groupId, m.user_id),
       fetchPicks(groupId, m.user_id),
     ]);
-    const s = computeMemberStats(drinks, picks);
+    const s = computeMemberStats(drinks, picks, extras.get(m.user_id) ?? 0);
     scored.push({ userId: m.user_id, name: m.display_name, total: s.wcc });
   }
   scored.sort((a, b) => b.total - a.total);

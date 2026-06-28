@@ -130,10 +130,14 @@ export function distinctStampsCount(drinks: DrinkRow[]): number {
 export function computeMemberStats(
   drinks: DrinkRow[],
   picks: PickRow[],
+  /** Comeback-multiplier bonuses + soft-reset adjustments for this user (0 when
+   *  the feature isn't live). Added on top of the derived base so the score stays
+   *  exact with no backfill - the multiplier only ever ADDS extra. See scripts/010. */
+  extraWcc = 0,
 ): MemberStats {
   return {
     drinks: drinksCount(drinks),
-    wcc: wccTotal(drinks, picks),
+    wcc: wccTotal(drinks, picks) + extraWcc,
     stamps: stampSet(drinks).size,
     distinctBeers: distinctStampsCount(drinks),
     passports: completedPassports(drinks).size,

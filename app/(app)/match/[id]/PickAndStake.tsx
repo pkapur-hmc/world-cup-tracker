@@ -23,6 +23,7 @@ export function PickAndStake({
   committedElsewhere,
   initial,
   locksAt,
+  stakeMult = 1,
 }: {
   matchId: number;
   isKnockout: boolean;
@@ -36,6 +37,9 @@ export function PickAndStake({
   committedElsewhere: number;
   initial: ExistingPick;
   locksAt: string;
+  /** Comeback stake multiplier (1-2x) - the further behind you are, the more a
+   *  correct pick pays. Locked onto the pick at placement; 1 when not live. */
+  stakeMult?: number;
 }) {
   const [pick, setPick] = useState<"A" | "D" | "B" | null>(initial?.pick ?? null);
   const [stake, setStake] = useState<number>(initial?.stake ?? 0);
@@ -68,7 +72,11 @@ export function PickAndStake({
   // Total minus everything staked across all games (incl. this slider). This is
   // the number that responds to the stepper - the headline stays put.
   const remainingToStake = Math.max(0, budget - stakeCapped);
-  const payout = stakeCapped > 0 ? 1 + 2 * stakeCapped : 1;
+  // Comeback multiplier: a correct pick pays floor((1 + 2*stake) * stakeMult).
+  // Mirrors settle_match_picks exactly (half-up). stakeMult is 1 when not behind
+  // or the feature is off, so this reduces to the old 1 + 2*stake.
+  const hasComeback = stakeMult > 1;
+  const payout = Math.floor((1 + 2 * stakeCapped) * stakeMult + 0.5);
   const minsToLock = Math.floor((new Date(locksAt).getTime() - now) / 60_000);
   const locked = minsToLock < 0;
   const matchesSaved =
@@ -272,7 +280,7 @@ export function PickAndStake({
 
       <div>
         <div className="section-label">
-          <span className="caps-label" style={{ display: "inline-flex", alignItems: "center" }}>
+          <span className="caps-label" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             Stake
             <InfoChip label="How does staking work?">
               <strong>Risk WCC to win more WCC.</strong>
@@ -280,7 +288,14 @@ export function PickAndStake({
               Stake <em>X</em> WCC on your pick. If you&apos;re right, you win <strong>1 + 2×X</strong> WCC and your stake is gone. If wrong, you just lose the stake.
               <br />
               Picking with 0 stake still wins 1 WCC if right.
+              <br />
+              <strong>Comeback bonus:</strong> the further behind you are, the more a correct pick pays - up to <strong>2×</strong>. Your current rate is locked in when you place the pick.
             </InfoChip>
+            {hasComeback ? (
+              <span className="badge" style={{ background: "var(--pitch)", color: "var(--foam-lit)", fontSize: 9, padding: "2px 7px" }}>
+                comeback ×{stakeMult.toFixed(1)}
+              </span>
+            ) : null}
           </span>
           <span className="t-small muted">Stake WCC to win more WCC</span>
         </div>
@@ -376,6 +391,7 @@ export function PickAndStake({
               </span>
               <span className="pp-formula">
                 {stakeCapped > 0 ? `1 + 2×${stakeCapped}` : "base"}
+                {hasComeback ? ` ×${stakeMult.toFixed(1)}` : ""}
               </span>
             </div>
             <div className={`pp-row pp-lose ${stakeCapped === 0 ? "is-dim" : ""}`}>
@@ -391,7 +407,7 @@ export function PickAndStake({
               <div className="pp-row pp-skip">
                 <span className="pp-label">Or skip stake</span>
                 <span className="pp-value tnum">
-                  +1 <WccIcon size={13} />
+                  +{Math.floor(stakeMult + 0.5)} <WccIcon size={13} />
                 </span>
                 <span className="pp-formula">no risk</span>
               </div>

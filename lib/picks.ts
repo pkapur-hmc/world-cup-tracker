@@ -134,6 +134,19 @@ export async function getUserDrinkStatsByMatch(
     cur.wcc += d.country_code ? 2 : 1;
     out.set(d.match_id, cur);
   }
+  // Add comeback-multiplier extras per match. Tolerant of the table not
+  // existing yet (pre scripts/010).
+  const cbRes = await supabase
+    .from("wc_comeback_bonus")
+    .select("match_id, bonus_wcc")
+    .eq("user_id", userId);
+  if (!cbRes.error)
+    for (const r of (cbRes.data ?? []) as { match_id: number | null; bonus_wcc: number }[]) {
+      if (r.match_id === null) continue;
+      const cur = out.get(r.match_id) ?? { drinks: 0, wcc: 0 };
+      cur.wcc += Number(r.bonus_wcc);
+      out.set(r.match_id, cur);
+    }
   return out;
 }
 
@@ -180,6 +193,19 @@ export async function getMatchEarningsForUsers(
     cur.wcc += d.country_code ? 2 : 1;
     out.set(d.user_id, cur);
   }
+  // Add comeback-multiplier extras earned on this match (country-beer + passport
+  // bonuses). Tolerant of the table not existing yet (pre scripts/010).
+  const cbRes = await supabase
+    .from("wc_comeback_bonus")
+    .select("user_id, bonus_wcc")
+    .in("user_id", userIds)
+    .eq("match_id", matchId);
+  if (!cbRes.error)
+    for (const r of (cbRes.data ?? []) as { user_id: string; bonus_wcc: number }[]) {
+      const cur = out.get(r.user_id) ?? { drinks: 0, wcc: 0 };
+      cur.wcc += Number(r.bonus_wcc);
+      out.set(r.user_id, cur);
+    }
   return out;
 }
 

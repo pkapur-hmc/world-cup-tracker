@@ -34,6 +34,7 @@
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
+    "pg": "^8.22.0",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",
     "typescript": "^5"

@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { getMatchById, matchPhase, type Match } from "@/lib/fixtures";
 import { BackButton } from "@/components/ui/BackButton";
 import { getCurrentMembership, getCrossBracketMembers } from "@/lib/membership";
-import { getMemberStats } from "@/lib/stats";
+import { getMemberStats, getUserMultipliers } from "@/lib/stats";
+import { createClient } from "@/lib/supabase/server";
 import {
   getPicksForUsersInMatch,
   getMatchEarningsForUsers,
@@ -614,6 +615,127 @@ function MatchDrinksBars({
   );
 }
 
+/**
+ * Post-match itemization of where THIS user's WCC for the match came from, with
+ * the multiplier shown so the "why" is explicit: country beers (base + comeback),
+ * basic drinks, passport bonuses earned this match, and the settled pick payout.
+ */
+async function EarningsBreakdown({ userId, match }: { userId: string; match: Match }) {
+  const supabase = await createClient();
+  const [drinksRes, bonusRes, pickRes] = await Promise.all([
+    supabase.from("wc_drinks").select("country_code").eq("user_id", userId).eq("match_id", match.id),
+    supabase
+      .from("wc_comeback_bonus")
+      .select("kind, base_wcc, mult, bonus_wcc, country_code")
+      .eq("user_id", userId)
+      .eq("match_id", match.id),
+    supabase
+      .from("wc_picks")
+      .select("stake, stake_mult, payout_wcp, settled_at")
+      .eq("user_id", userId)
+      .eq("match_id", match.id)
+      .limit(1),
+  ]);
+
+  const drinks = (drinksRes.data ?? []) as { country_code: string | null }[];
+  const basic = drinks.filter((d) => !d.country_code).length;
+  const countryN = drinks.filter((d) => d.country_code).length;
+  const bonuses = !bonusRes.error
+    ? ((bonusRes.data ?? []) as {
+        kind: string;
+        base_wcc: number;
+        mult: number;
+        bonus_wcc: number;
+        country_code: string | null;
+      }[])
+    : [];
+  const beerExtra = bonuses
+    .filter((b) => b.kind === "country_beer")
+    .reduce((s, b) => s + Number(b.bonus_wcc), 0);
+  const passportBonuses = bonuses.filter(
+    (b) => b.kind === "passport_depth" || b.kind === "passport_breadth",
+  );
+  const pick = ((pickRes.data ?? [])[0] ?? undefined) as
+    | { stake: number; stake_mult: number; payout_wcp: number; settled_at: string | null }
+    | undefined;
+
+  type Line = { label: string; detail: string; value: number };
+  const lines: Line[] = [];
+  if (countryN > 0)
+    lines.push({
+      label: `Country beers ×${countryN}`,
+      detail: beerExtra > 0 ? `${countryN * 2} base + ${beerExtra} comeback` : `${countryN} × 2`,
+      value: countryN * 2 + beerExtra,
+    });
+  if (basic > 0)
+    lines.push({ label: `Basic drinks ×${basic}`, detail: "flat +1 each", value: basic });
+  for (const pb of passportBonuses) {
+    const awarded = pb.base_wcc + Number(pb.bonus_wcc);
+    const label =
+      pb.kind === "passport_depth"
+        ? `${countryName(pb.country_code ?? "")} passport complete`
+        : "Passport breadth bonus";
+    lines.push({ label, detail: `5 × ${Number(pb.mult)}`, value: awarded });
+  }
+  if (pick && pick.settled_at) {
+    if (pick.payout_wcp > 0)
+      lines.push({
+        label: "Correct pick",
+        detail: `(1 + 2×${pick.stake})${Number(pick.stake_mult) > 1 ? ` × ${Number(pick.stake_mult).toFixed(1)}` : ""}`,
+        value: pick.payout_wcp,
+      });
+    else if (pick.stake > 0)
+      lines.push({ label: "Wrong pick", detail: "stake lost", value: -pick.stake });
+  }
+
+  if (lines.length === 0) return null;
+  const total = lines.reduce((s, l) => s + l.value, 0);
+
+  return (
+    <div>
+      <div className="section-label">
+        <span className="caps-label">Where your WCC came from</span>
+      </div>
+      <div className="card" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {lines.map((l, i) => (
+          <div
+            key={i}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}
+          >
+            <div>
+              <div className="t-sub" style={{ fontSize: 14 }}>{l.label}</div>
+              <div className="t-small muted">{l.detail}</div>
+            </div>
+            <div
+              className="tnum"
+              style={{ fontWeight: 800, color: l.value >= 0 ? "var(--pitch)" : "var(--penalty)" }}
+            >
+              {l.value >= 0 ? "+" : ""}{l.value}
+            </div>
+          </div>
+        ))}
+        <div
+          style={{
+            borderTop: "1px solid var(--stout-12)",
+            paddingTop: 8,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span className="caps-label">Total this match</span>
+          <span
+            className="tnum"
+            style={{ fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 4 }}
+          >
+            <WccIcon size={14} /> {total >= 0 ? "+" : ""}{total}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default async function MatchPage({
   params,
 }: {
@@ -659,7 +781,7 @@ async function LiveView({
     role: m.role,
   }));
   const memberIds = crossBracketMembers.map((m) => m.userId);
-  const [stats, picks, earnings, watching, stampedBeers, beerCounts, genericCounts] = await Promise.all([
+  const [stats, picks, earnings, watching, stampedBeers, beerCounts, genericCounts, mult] = await Promise.all([
     getMemberStats("", userId),
     getPicksForUsersInMatch(memberInput, match.id),
     getMatchEarningsForUsers(memberIds, match.id),
@@ -667,6 +789,7 @@ async function LiveView({
     getUserStampedBeers(userId),
     getUserBeerCountsForMatch(userId, match.id, teamCodes),
     getUserGenericCountryCounts(userId, match.id, teamCodes),
+    getUserMultipliers(userId),
   ]);
 
   const myPick = picks.find((p) => p.userId === userId);
@@ -771,6 +894,7 @@ async function LiveView({
           initialBasicCount={myBasicCountThisMatch}
           countryCount={myBeerCountThisMatch}
           totalAllTime={stats.drinks}
+          beerMult={mult.beerMult}
         />
 
         {match.team_a_code ? (
@@ -783,6 +907,8 @@ async function LiveView({
             claimedNames={stampedBeers.get(match.team_a_code) ?? new Set()}
             matchCounts={beerCounts}
             initialGenericCount={genericCounts.get(match.team_a_code) ?? 0}
+            beerMult={mult.beerMult}
+            passportMult={mult.passportMult}
           />
         ) : null}
 
@@ -796,6 +922,8 @@ async function LiveView({
             claimedNames={stampedBeers.get(match.team_b_code) ?? new Set()}
             matchCounts={beerCounts}
             initialGenericCount={genericCounts.get(match.team_b_code) ?? 0}
+            beerMult={mult.beerMult}
+            passportMult={mult.passportMult}
           />
         ) : null}
 
@@ -891,11 +1019,12 @@ async function PreView({
     displayName: m.displayName,
     role: m.role,
   }));
-  const [stats, picks, stampedBeers, myPicksByMatch] = await Promise.all([
+  const [stats, picks, stampedBeers, myPicksByMatch, mult] = await Promise.all([
     getMemberStats("", userId),
     getPicksForUsersInMatch(memberInput, match.id),
     getUserStampedBeers(userId),
     getUserPicksByMatch(userId),
+    getUserMultipliers(userId),
   ]);
   const my = picks.find((p) => p.userId === userId);
   const isKnockout = match.stage !== "group";
@@ -958,6 +1087,7 @@ async function PreView({
             committedElsewhere={committedElsewhere}
             initial={my?.pick ? { pick: my.pick, stake: my.stake } : null}
             locksAt={match.kickoff_at}
+            stakeMult={mult.stakeMult}
           />
         ) : (
           <div className="card empty-block" style={{ textAlign: "center" }}>
@@ -1014,6 +1144,7 @@ async function PostView({
       <div className="screen" style={{ gap: 18 }}>
         <MatchHero match={match} />
         <PostMatchSummary match={match} myPick={my} />
+        <EarningsBreakdown userId={userId} match={match} />
         <GroupPicksList picks={picks} match={match} />
         <MatchDrinksBars earnings={earnings} members={memberList} />
         <div style={{ height: 16 }} />

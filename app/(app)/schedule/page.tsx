@@ -7,6 +7,7 @@ import {
   type Match,
 } from "@/lib/fixtures";
 import { getCurrentMembership } from "@/lib/membership";
+import { createClient } from "@/lib/supabase/server";
 import { getUserPicksByMatch, getUserDrinkStatsByMatch, getUserStampedBeers } from "@/lib/picks";
 import { getMemberStats } from "@/lib/stats";
 import { beerNeedsFor } from "@/lib/beer-needs";
@@ -54,6 +55,9 @@ export default async function SchedulePage({
   let stats: Awaited<ReturnType<typeof getMemberStats>> | null = null;
   let picksCorrect = 0;
   let picksSettled = 0;
+  // Net effect of the one-time knockout soft reset on this player (negative, or
+  // null if they were at/below the mean and untouched / it hasn't been run).
+  let resetDelta: number | null = null;
 
   if (view === "beers") {
     // Plan-ahead: the next matches with each side's still-needed beers. Capped
@@ -135,6 +139,19 @@ export default async function SchedulePage({
         picksSettled += 1;
         if (p.payout_wcp > 0) picksCorrect += 1;
       }
+
+      // Knockout soft-reset impact (tolerant of the table not existing yet).
+      if (member) {
+        const supabase = await createClient();
+        const adjRes = await supabase
+          .from("wc_score_adjustments")
+          .select("delta")
+          .eq("user_id", member.userId)
+          .eq("reason", "knockout_compression");
+        if (!adjRes.error && adjRes.data && adjRes.data.length > 0) {
+          resetDelta = adjRes.data.reduce((s, r) => s + Number((r as { delta: number }).delta), 0);
+        }
+      }
     }
   }
 
@@ -202,6 +219,25 @@ export default async function SchedulePage({
               <div className="stat-cell">
                 <div className="stat-num">{stats.drinks}</div>
                 <div className="stat-label">Pours</div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {view === "past" && resetDelta !== null ? (
+          <div className="card" style={{ marginBottom: 4, borderLeft: "4px solid var(--burn)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span aria-hidden style={{ fontSize: 20 }}>⚖️</span>
+              <div>
+                <div className="t-sub" style={{ fontSize: 14 }}>Knockout reset applied</div>
+                <div className="t-small muted">
+                  Scores were pulled toward the pack for the knockout rounds.{" "}
+                  {resetDelta < 0 ? (
+                    <>Your total moved <strong>{resetDelta} WCC</strong> - the lead got more catchable.</>
+                  ) : (
+                    <>You were already in the pack, so your total was untouched.</>
+                  )}
+                </div>
               </div>
             </div>
           </div>

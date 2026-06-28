@@ -20,11 +20,14 @@ export function PourButton({
   initialBasicCount,
   countryCount,
   totalAllTime,
+  beerMult = 1,
 }: {
   matchId: number;
   initialBasicCount: number;
   countryCount: number;
   totalAllTime: number;
+  /** Comeback multiplier for country beers (basic drinks stay flat at 1). */
+  beerMult?: number;
 }) {
   const toNum = (n: number | undefined | null) =>
     Number.isFinite(Number(n)) ? Number(n) : 0;
@@ -47,8 +50,9 @@ export function PourButton({
 
   const country = toNum(countryCount);
   const matchTotal = basicCount + country;
-  // WCC is the headline: a basic drink is 1, a country beer 2.
-  const matchWcc = basicCount + country * 2;
+  // WCC headline: basic drink 1 (flat), country beer 2*beerMult (comeback bonus).
+  const countryWcc = Math.floor(2 * beerMult + 0.5);
+  const matchWcc = basicCount + country * countryWcc;
 
   function plus() {
     setErr(null);
@@ -90,7 +94,7 @@ export function PourButton({
             </div>
             <div className="t-small muted">
               Drinking a specific country&apos;s beer? Use the section below for
-              +2 WCC + 🛂 stamp.
+              +{countryWcc} WCC + 🛂 stamp.
             </div>
           </div>
         </div>

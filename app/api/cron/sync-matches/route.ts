@@ -259,6 +259,12 @@ export async function GET(request: Request) {
     if (!error && typeof data === "number") refunded += data;
   }
 
+  // Refresh the comeback-multiplier snapshot once per tick: settlements move
+  // scores, which re-anchors everyone's multiplier. Best-effort + idempotent;
+  // a no-op (just recompute) if the multiplier feature isn't live yet. Tolerant
+  // of the RPC not existing before scripts/010 is applied.
+  await supabase.rpc("wc_refresh_user_scores", { targets: null });
+
   return Response.json({
     ok: true,
     teams: teams.length,
