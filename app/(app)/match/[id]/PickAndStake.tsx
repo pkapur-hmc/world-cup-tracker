@@ -76,7 +76,9 @@ export function PickAndStake({
   // Mirrors settle_match_picks exactly (half-up). stakeMult is 1 when not behind
   // or the feature is off, so this reduces to the old 1 + 2*stake.
   const hasComeback = stakeMult > 1;
-  const payout = Math.floor((1 + 2 * stakeCapped) * stakeMult + 0.5);
+  // A correct pick returns your stake times your comeback multiplier, plus 1.
+  // Mirrors settle_match_picks (scripts/016) exactly, half-up.
+  const payout = Math.floor(stakeCapped * stakeMult + 0.5) + 1;
   const minsToLock = Math.floor((new Date(locksAt).getTime() - now) / 60_000);
   const locked = minsToLock < 0;
   const matchesSaved =
@@ -285,11 +287,9 @@ export function PickAndStake({
             <InfoChip label="How does staking work?">
               <strong>Risk WCC to win more WCC.</strong>
               <br />
-              Stake <em>X</em> WCC on your pick. If you&apos;re right, you win <strong>1 + 2×X</strong> WCC and your stake is gone. If wrong, you just lose the stake.
+              Stake <em>X</em> on your pick. If you&apos;re right you get back <strong>X × your multiplier, + 1</strong>. If wrong, you lose the stake. A no-stake correct pick still wins 1.
               <br />
-              Picking with 0 stake still wins 1 WCC if right.
-              <br />
-              <strong>Comeback bonus:</strong> the further behind you are, the more a correct pick pays - up to <strong>2×</strong>. Your current rate is locked in when you place the pick.
+              <strong>Comeback multiplier:</strong> the further behind you are, the higher it climbs (up to <strong>2×</strong>) - so a behind player&apos;s 100 stake can return ~200, while near the top it&apos;s ~1× (a correct stake roughly breaks even). Your rate is locked in when you place the pick.
             </InfoChip>
             {hasComeback ? (
               <span className="badge" style={{ background: "var(--pitch)", color: "var(--foam-lit)", fontSize: 9, padding: "2px 7px" }}>
@@ -390,8 +390,7 @@ export function PickAndStake({
                 +{payout} <WccIcon size={13} />
               </span>
               <span className="pp-formula">
-                {stakeCapped > 0 ? `1 + 2×${stakeCapped}` : "base"}
-                {hasComeback ? ` ×${stakeMult.toFixed(1)}` : ""}
+                {stakeCapped > 0 ? `${stakeCapped} ×${stakeMult.toFixed(1)} + 1` : "+1"}
               </span>
             </div>
             <div className={`pp-row pp-lose ${stakeCapped === 0 ? "is-dim" : ""}`}>
@@ -407,7 +406,7 @@ export function PickAndStake({
               <div className="pp-row pp-skip">
                 <span className="pp-label">Or skip stake</span>
                 <span className="pp-value tnum">
-                  +{Math.floor(stakeMult + 0.5)} <WccIcon size={13} />
+                  +1 <WccIcon size={13} />
                 </span>
                 <span className="pp-formula">no risk</span>
               </div>

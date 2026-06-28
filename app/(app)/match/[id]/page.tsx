@@ -681,7 +681,7 @@ async function EarningsBreakdown({ userId, match }: { userId: string; match: Mat
     if (pick.payout_wcp > 0)
       lines.push({
         label: "Correct pick",
-        detail: `(1 + 2×${pick.stake})${Number(pick.stake_mult) > 1 ? ` × ${Number(pick.stake_mult).toFixed(1)}` : ""}`,
+        detail: `${pick.stake} × ${Number(pick.stake_mult).toFixed(1)} + 1`,
         value: pick.payout_wcp,
       });
     else if (pick.stake > 0)

@@ -64,14 +64,18 @@ export function HelpSheet({ open, onClose }: { open: boolean; onClose: () => voi
             Pick the winner with no stake: <strong>+1 WCC</strong> if right
           </li>
           <li>
-            Pick correctly with a stake of <em>X</em>: <strong>+{`1 + 2×X`}</strong> WCC (your
-            X-cup stake is spent either way)
+            Pick correctly with a stake of <em>X</em>: you win back <strong>X × your
+            multiplier, + 1</strong> (so your stake comes back plus the comeback profit)
           </li>
           <li>
             Wrong pick: you just lose the stake. No pick = nothing won or lost.
           </li>
         </ul>
-        <p className="muted">You can stake any WCC you have, including winnings.</p>
+        <p className="muted">
+          Your multiplier is 1× near the top (a correct stake roughly breaks even) and
+          climbs to 2× the further behind you are - so staking is a comeback tool, not a
+          way to run up a lead. You can stake any WCC you have.
+        </p>
       </Section>
 
       <Section title={<>🔥 Comeback multiplier</>}>
