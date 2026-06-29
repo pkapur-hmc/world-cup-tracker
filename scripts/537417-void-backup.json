@@ -1,0 +1,20 @@
+{
+  "match_id": 537417,
+  "match": "RSA v CAN (R32)",
+  "note": "Stakes voided to 0 (stake_mult 1.0) on all unsettled picks because they were placed under the OLD payout rule (1 + 2*stake) but would have settled under the new multiplier model. This is the pre-void record so the original bets are recoverable.",
+  "voided_at": "2026-06-28 (prior session)",
+  "result": "B won (Canada)",
+  "total_staked": 10208,
+  "picks": [
+    { "user_id": "ba250a39-a0e6-4f0f-8230-03f1171d090a", "pick": "B", "stake": 0,    "stake_mult": 1.0 },
+    { "user_id": "b72580af-13d9-4088-bc50-4686d7480583", "pick": "B", "stake": 0,    "stake_mult": 1.0 },
+    { "user_id": "4399e142-6006-44ba-a872-aaea73e85a5a", "pick": "B", "stake": 5,    "stake_mult": 1.0 },
+    { "user_id": "18dc08c8-76be-4450-89ae-10dee82bbc9c", "pick": "B", "stake": 33,   "stake_mult": 1.5 },
+    { "user_id": "77359637-6ce3-4943-b698-6dc0071ba226", "pick": "B", "stake": 8807, "stake_mult": 1.0 },
+    { "user_id": "cddcc3c5-cba2-44e2-a6b5-515bd01d7e77", "pick": "B", "stake": 505,  "stake_mult": 1.0 },
+    { "user_id": "e56b618d-c09b-41a4-9fb1-99bafa940e0a", "pick": "B", "stake": 1,    "stake_mult": 1.0 },
+    { "user_id": "7f94978e-c95d-4df8-9e92-b98b0009b119", "pick": "B", "stake": 350,  "stake_mult": 1.0 },
+    { "user_id": "76e7da54-2a2b-4e1a-89d1-fc040e1e4daf", "pick": "B", "stake": 7,    "stake_mult": 2.0 },
+    { "user_id": "5fab535e-31f2-4a44-8713-9005215d1933", "pick": "B", "stake": 500,  "stake_mult": 1.5 }
+  ]
+}

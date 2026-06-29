@@ -72,9 +72,9 @@ export function HelpSheet({ open, onClose }: { open: boolean; onClose: () => voi
           </li>
         </ul>
         <p className="muted">
-          Your multiplier is 1× near the top (a correct stake roughly breaks even) and
-          climbs to 2× the further behind you are - so staking is a comeback tool, not a
-          way to run up a lead. You can stake any WCC you have.
+          Your multiplier never drops below 1.1× - even at the top a correct stake always
+          pays a little - and climbs to 2× the further behind you are, so staking is a
+          comeback tool, not a way to run up a lead. You can stake any WCC you have.
         </p>
       </Section>
 
