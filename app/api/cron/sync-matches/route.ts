@@ -226,6 +226,16 @@ export async function GET(request: Request) {
   // 2. A real score must be in hand: final with null scores is
   //    indistinguishable from a draw inside the RPC (winner_code null), which
   //    is exactly how MEX/RSA paid every Mexico pick 0 on opening night.
+  // 3. A knockout must have a winner: knockouts can't legitimately end level,
+  //    so winner_code null on a non-group match means the feed isn't truly
+  //    final - it briefly reported FINISHED at a level score mid-VAR before
+  //    the deciding goal/penalties were credited. Settling then pays every
+  //    pick 0 (no draw picks to catch it) and locks it, since settlement is
+  //    one-shot. This is exactly what happened to POR/CRO (r32) on 2026-07-02:
+  //    it settled at a null winner, then football-data corrected to POR 2-1
+  //    but the picks stayed zeroed. Group draws are legitimate, so only
+  //    knockouts are gated; football-data sets a real winner once penalties/ET
+  //    resolve, at which point this passes on the next tick.
   const fdFinalIds = new Set(
     fdMatches
       .filter((m) => m.status === "FINISHED" || m.status === "AWARDED")
@@ -237,7 +247,8 @@ export async function GET(request: Request) {
         fdFinalIds.has(r.id) &&
         r.status === "final" &&
         r.score_a !== null &&
-        r.score_b !== null,
+        r.score_b !== null &&
+        (r.stage === "group" || r.winner_code !== null),
     )
     .map((r) => r.id);
   const postponedIds = matchRows

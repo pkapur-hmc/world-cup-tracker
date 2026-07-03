@@ -1,0 +1,102 @@
+{
+  "match": {
+    "id": 537419,
+    "stage": "r32",
+    "team_a_code": "POR",
+    "team_b_code": "CRO",
+    "score_a": 2,
+    "score_b": 1,
+    "winner_code": "POR",
+    "status": "final"
+  },
+  "picks": [
+    {
+      "group_id": "920881b4-0911-4018-b0d6-ba773bb85149",
+      "user_id": "4399e142-6006-44ba-a872-aaea73e85a5a",
+      "match_id": 537419,
+      "pick": "B",
+      "stake": 0,
+      "stake_mult": "2.0",
+      "settled_at": "2026-07-03T01:15:02.862Z",
+      "payout_wcp": 0,
+      "payout_wcc": 0
+    },
+    {
+      "group_id": "920881b4-0911-4018-b0d6-ba773bb85149",
+      "user_id": "b72580af-13d9-4088-bc50-4686d7480583",
+      "match_id": 537419,
+      "pick": "B",
+      "stake": 5,
+      "stake_mult": "2.0",
+      "settled_at": "2026-07-03T01:15:02.862Z",
+      "payout_wcp": 0,
+      "payout_wcc": 0
+    },
+    {
+      "group_id": "920881b4-0911-4018-b0d6-ba773bb85149",
+      "user_id": "76e7da54-2a2b-4e1a-89d1-fc040e1e4daf",
+      "match_id": 537419,
+      "pick": "B",
+      "stake": 0,
+      "stake_mult": "2.0",
+      "settled_at": "2026-07-03T01:15:02.862Z",
+      "payout_wcp": 0,
+      "payout_wcc": 0
+    },
+    {
+      "group_id": "920881b4-0911-4018-b0d6-ba773bb85149",
+      "user_id": "7f94978e-c95d-4df8-9e92-b98b0009b119",
+      "match_id": 537419,
+      "pick": "A",
+      "stake": 0,
+      "stake_mult": "1.7",
+      "settled_at": "2026-07-03T01:15:02.862Z",
+      "payout_wcp": 0,
+      "payout_wcc": 0
+    },
+    {
+      "group_id": "920881b4-0911-4018-b0d6-ba773bb85149",
+      "user_id": "ba250a39-a0e6-4f0f-8230-03f1171d090a",
+      "match_id": 537419,
+      "pick": "A",
+      "stake": 10,
+      "stake_mult": "2.0",
+      "settled_at": "2026-07-03T01:15:02.862Z",
+      "payout_wcp": 0,
+      "payout_wcc": 0
+    },
+    {
+      "group_id": "897e9cec-48d9-4323-b620-41c77646f6c5",
+      "user_id": "5fab535e-31f2-4a44-8713-9005215d1933",
+      "match_id": 537419,
+      "pick": "A",
+      "stake": 0,
+      "stake_mult": "1.2",
+      "settled_at": "2026-07-03T01:15:02.862Z",
+      "payout_wcp": 0,
+      "payout_wcc": 0
+    },
+    {
+      "group_id": "ef401b71-a3e3-404e-953a-205dd8be6080",
+      "user_id": "77359637-6ce3-4943-b698-6dc0071ba226",
+      "match_id": 537419,
+      "pick": "A",
+      "stake": 677,
+      "stake_mult": "1.1",
+      "settled_at": "2026-07-03T01:15:02.862Z",
+      "payout_wcp": 0,
+      "payout_wcc": 0
+    },
+    {
+      "group_id": "920881b4-0911-4018-b0d6-ba773bb85149",
+      "user_id": "18dc08c8-76be-4450-89ae-10dee82bbc9c",
+      "match_id": 537419,
+      "pick": "A",
+      "stake": 2275,
+      "stake_mult": "1.3",
+      "settled_at": "2026-07-03T01:15:02.862Z",
+      "payout_wcp": 0,
+      "payout_wcc": 0
+    }
+  ]
+}
