@@ -46,7 +46,11 @@ export type FdMatch = {
   homeTeam: FdTeam;
   awayTeam: FdTeam;
   score: {
+    // `winner` is null on penalty shootouts (duration PENALTY_SHOOTOUT) - the
+    // shootout result is folded into `fullTime` instead, so we derive the
+    // winner from fullTime rather than trusting this field. See toMatchRow.
     winner: "HOME_TEAM" | "AWAY_TEAM" | "DRAW" | null;
+    duration?: string;
     fullTime: { home: number | null; away: number | null };
   };
   lastUpdated: string;
@@ -112,12 +116,22 @@ export function groupLetterFrom(group: string | null): string | null {
 }
 
 export function toMatchRow(m: FdMatch): MatchRow {
+  // Winner is derived from the fullTime score, NOT score.winner. football-data
+  // leaves score.winner null for penalty shootouts (observed AUS/EGY r32:
+  // winner null, duration PENALTY_SHOOTOUT, fullTime 3-5) but folds the
+  // shootout tally into fullTime, so the higher fullTime score is the true
+  // winner. A level fullTime is a draw (winner null). This is also robust to
+  // the transient null winner football-data returns mid-finalization, which is
+  // how POR/CRO settled as a phantom draw.
+  const { home, away } = m.score.fullTime;
   const winnerCode =
-    m.score.winner === "HOME_TEAM"
-      ? (m.homeTeam.tla ?? null)
-      : m.score.winner === "AWAY_TEAM"
-        ? (m.awayTeam.tla ?? null)
-        : null;
+    home === null || away === null
+      ? null
+      : home > away
+        ? (m.homeTeam.tla ?? null)
+        : away > home
+          ? (m.awayTeam.tla ?? null)
+          : null;
 
   return {
     id: m.id,
