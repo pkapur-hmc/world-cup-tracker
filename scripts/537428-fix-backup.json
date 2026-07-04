@@ -1,0 +1,78 @@
+{
+  "match": {
+    "id": 537428,
+    "stage": "r32",
+    "team_a_code": "AUS",
+    "team_b_code": "EGY",
+    "score_a": 3,
+    "score_b": 5,
+    "winner_code": null,
+    "status": "final"
+  },
+  "picks": [
+    {
+      "user_id": "4399e142-6006-44ba-a872-aaea73e85a5a",
+      "pick": "B",
+      "stake": 0,
+      "stake_mult": "2.0",
+      "payout_wcp": 0,
+      "settled_at": null
+    },
+    {
+      "user_id": "76e7da54-2a2b-4e1a-89d1-fc040e1e4daf",
+      "pick": "A",
+      "stake": 0,
+      "stake_mult": "2.0",
+      "payout_wcp": 0,
+      "settled_at": null
+    },
+    {
+      "user_id": "77359637-6ce3-4943-b698-6dc0071ba226",
+      "pick": "A",
+      "stake": 0,
+      "stake_mult": "1.1",
+      "payout_wcp": 0,
+      "settled_at": null
+    },
+    {
+      "user_id": "ba250a39-a0e6-4f0f-8230-03f1171d090a",
+      "pick": "A",
+      "stake": 0,
+      "stake_mult": "2.0",
+      "payout_wcp": 0,
+      "settled_at": null
+    },
+    {
+      "user_id": "b72580af-13d9-4088-bc50-4686d7480583",
+      "pick": "B",
+      "stake": 20,
+      "stake_mult": "2.0",
+      "payout_wcp": 0,
+      "settled_at": null
+    },
+    {
+      "user_id": "5fab535e-31f2-4a44-8713-9005215d1933",
+      "pick": "B",
+      "stake": 0,
+      "stake_mult": "1.2",
+      "payout_wcp": 0,
+      "settled_at": null
+    },
+    {
+      "user_id": "18dc08c8-76be-4450-89ae-10dee82bbc9c",
+      "pick": "B",
+      "stake": 1000,
+      "stake_mult": "1.2",
+      "payout_wcp": 0,
+      "settled_at": null
+    },
+    {
+      "user_id": "7f94978e-c95d-4df8-9e92-b98b0009b119",
+      "pick": "B",
+      "stake": 5,
+      "stake_mult": "1.5",
+      "payout_wcp": 0,
+      "settled_at": null
+    }
+  ]
+}

@@ -205,6 +205,29 @@ export async function GET(request: Request) {
     // overlay is optional; the football-data sync still lands
   }
 
+  // ---- Winner safety net ----
+  // A final match with a decisive score MUST carry a winner. winner_code is
+  // otherwise the only draw signal, so a stuck null makes a clear win read as a
+  // draw everywhere (UI + settlement). This happens when the score arrives from
+  // the ESPN overlay while still `live` (ESPN only stamps the winner on its
+  // `post` state, and skips the row once it's `final`), then football-data's
+  // bulk feed flips status to final with a null fullTime - the score guard
+  // carries the score forward but the winner stays null. Observed on AUS/EGY
+  // (r32, 3-5) 2026-07-03. Derive from the score here; a level score stays null
+  // (a real group draw, or a knockout awaiting penalties/ET from football-data).
+  for (const row of matchRows) {
+    if (
+      row.status === "final" &&
+      row.winner_code === null &&
+      row.score_a !== null &&
+      row.score_b !== null &&
+      row.score_a !== row.score_b
+    ) {
+      row.winner_code =
+        row.score_a > row.score_b ? row.team_a_code : row.team_b_code;
+    }
+  }
+
   const { error: matchesErr } = await supabase
     .from("wc_matches")
     .upsert(matchRows, { onConflict: "id" });
