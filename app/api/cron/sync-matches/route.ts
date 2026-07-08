@@ -239,17 +239,21 @@ export async function GET(request: Request) {
   }
 
   // ---- Settle picks ----
-  // For every match now `final`, settle its picks against the current winner.
-  // For every match now `postponed`, refund any picks still unsettled.
-  // settle_match_picks is SELF-HEALING (scripts/018): it re-evaluates every pick
-  // against the match's current winner_code on each call and rewrites any payout
-  // that no longer matches, stamping settled_at only once. Because this loop
-  // runs for every football-data-final match every tick, a winner that gets
-  // CORRECTED upstream (feed volatility during ET/penalties) re-settles within
-  // one tick - it no longer freezes on the first, possibly-wrong result. This is
-  // what stranded SUI/COL (537382): it settled paying Colombia while the feed
-  // briefly had them ahead, then corrected to SUI 4-3 but the payouts were
-  // locked. A steady-state final match re-settles to zero row changes.
+  // For every match now `final`, settle its picks; for every match now
+  // `postponed`, refund any picks still unsettled.
+  // settle_match_picks (scripts/018) is MINIMAL-TOUCH: it only writes a pick
+  // whose correctness flipped - a first settlement, or a win<->loss flip when the
+  // feed CORRECTS a winner. A pick that is still correct keeps its existing
+  // (possibly grandfathered) payout untouched. This loop runs for every
+  // football-data-final match every tick, so a corrected winner re-settles within
+  // one tick - fixing what stranded SUI/COL (537382): it settled paying Colombia
+  // while the feed briefly had them ahead, then corrected to SUI 4-3.
+  // It must NOT re-price still-correct picks under the current formula: the
+  // payout formula changed mid-tournament (002/012 doubling -> 016 return-rate)
+  // and old picks are grandfathered. An earlier "re-evaluate every pick" version
+  // silently re-priced all history down to the new formula on the next tick and
+  // pushed heavy bettors negative. A steady-state final match now re-settles to
+  // zero row changes.
   // Two settlement gates, both required:
   // 1. football-data ITSELF must say FINISHED this tick (not just the row
   //    status, which ESPN full-time or a previous tick may have set) - picks
