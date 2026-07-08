@@ -239,9 +239,17 @@ export async function GET(request: Request) {
   }
 
   // ---- Settle picks ----
-  // For every match now `final`, settle any picks still unsettled.
+  // For every match now `final`, settle its picks against the current winner.
   // For every match now `postponed`, refund any picks still unsettled.
-  // RPCs are idempotent (they only touch rows where settled_at IS NULL).
+  // settle_match_picks is SELF-HEALING (scripts/018): it re-evaluates every pick
+  // against the match's current winner_code on each call and rewrites any payout
+  // that no longer matches, stamping settled_at only once. Because this loop
+  // runs for every football-data-final match every tick, a winner that gets
+  // CORRECTED upstream (feed volatility during ET/penalties) re-settles within
+  // one tick - it no longer freezes on the first, possibly-wrong result. This is
+  // what stranded SUI/COL (537382): it settled paying Colombia while the feed
+  // briefly had them ahead, then corrected to SUI 4-3 but the payouts were
+  // locked. A steady-state final match re-settles to zero row changes.
   // Two settlement gates, both required:
   // 1. football-data ITSELF must say FINISHED this tick (not just the row
   //    status, which ESPN full-time or a previous tick may have set) - picks
