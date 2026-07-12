@@ -93,8 +93,8 @@ export function HelpSheet({ open, onClose }: { open: boolean; onClose: () => voi
             <strong>Passport bonuses</strong> scale up to <strong>×5</strong> (up to +25)
           </li>
           <li>
-            <strong>Correct picks</strong> pay up to <strong>×2</strong> - your rate is
-            locked in when you place the bet
+            <strong>Correct picks</strong> pay up to <strong>×2</strong> - your rate
+            locks in at kickoff
           </li>
         </ul>
         <p className="muted">

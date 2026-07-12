@@ -38,7 +38,8 @@ export function PickAndStake({
   initial: ExistingPick;
   locksAt: string;
   /** Comeback stake multiplier (1-2x) - the further behind you are, the more a
-   *  correct pick pays. Locked onto the pick at placement; 1 when not live. */
+   *  correct pick pays. Shown live as a preview; the paid rate locks at kickoff.
+   *  1 when not live. */
   stakeMult?: number;
 }) {
   const [pick, setPick] = useState<"A" | "D" | "B" | null>(initial?.pick ?? null);
@@ -289,7 +290,7 @@ export function PickAndStake({
               <br />
               Stake <em>X</em> on your pick. If you&apos;re right you get back <strong>X × your multiplier, + 1</strong>. If wrong, you lose the stake. A no-stake correct pick still wins 1.
               <br />
-              <strong>Comeback multiplier:</strong> the further behind you are, the higher it climbs (up to <strong>2×</strong>) - so a behind player&apos;s 100 stake can return ~200, while near the top it&apos;s ~1× (a correct stake roughly breaks even). Your rate is locked in when you place the pick.
+              <strong>Comeback multiplier:</strong> the further behind you are, the higher it climbs (up to <strong>2×</strong>) - so a behind player&apos;s 100 stake can return ~200, while near the top it&apos;s ~1× (a correct stake roughly breaks even). Your rate locks in at kickoff.
             </InfoChip>
             {hasComeback ? (
               <span className="badge" style={{ background: "var(--pitch)", color: "var(--foam-lit)", fontSize: 9, padding: "2px 7px" }}>

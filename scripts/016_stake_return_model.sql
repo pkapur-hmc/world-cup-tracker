@@ -11,8 +11,10 @@
 --   - stake 500 @ 1.0x (leader) -> 501 (net +1, ~break even)
 --   - stake 0 (any) -> 1 (net +1, the correct-call reward)
 -- The +1 keeps a no-stake correct pick worth something. Wrong picks lose the
--- stake (unchanged). stake_mult is still snapshotted at placement, so the rate
--- the player saw is the rate they're paid. Only affects picks settled AFTER this.
+-- stake (unchanged). settle reads whatever stake_mult is stored: as of
+-- scripts/019 that is the rate LOCKED AT KICKOFF (the placement-time stamp is
+-- only a provisional preview), so the rate a player has when bets lock is the
+-- rate they're paid. Only affects picks settled AFTER this.
 --
 -- Idempotent: create or replace; only touches unsettled picks.
 -- ============================================================

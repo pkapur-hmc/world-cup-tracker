@@ -13,6 +13,8 @@ import { createClient } from "@supabase/supabase-js";
 import {
   fetchAllMatches,
   fetchMatch,
+  needsLimboDetailFetch,
+  shouldKeepExistingKnockoutResult,
   teamsFromMatches,
   toMatchRow,
   type FdMatch,
@@ -63,20 +65,30 @@ export async function GET(request: Request) {
     const ex = dbScores.get(id);
     return !!ex && ex.score_a !== null && ex.score_b !== null;
   };
+  const dbWinnerCode = (id: number) => dbScores.get(id)?.winner_code ?? null;
+
+  // A finished knockout that the bulk feed reports at a null or LEVEL fullTime
+  // is stuck mid-finalization (see lib/football-data lifecycle). While the DB
+  // row still has no winner, the single-match detail endpoint carries the
+  // decisive result sooner - fetch it regardless of scoreKnown, and sort these
+  // to the front of the budget queue. At most 1-2 knockouts per day can be in
+  // this state, so they cannot starve the live/finished-no-score backfills.
+  const detailPriority = (m: FdMatch) => {
+    if (needsLimboDetailFetch(m, dbWinnerCode(m.id))) return 0; // limbo first
+    const live = m.status === "IN_PLAY" || m.status === "PAUSED";
+    return live ? 2 : 1; // finished-no-score before live
+  };
   const needsDetail = fdMatches
-    .filter((m) => m.score.fullTime.home === null)
     .filter(
       (m) =>
-        m.status === "IN_PLAY" ||
-        m.status === "PAUSED" ||
-        ((m.status === "FINISHED" || m.status === "AWARDED") &&
-          !scoreKnown(m.id)),
+        needsLimboDetailFetch(m, dbWinnerCode(m.id)) ||
+        (m.score.fullTime.home === null &&
+          (m.status === "IN_PLAY" ||
+            m.status === "PAUSED" ||
+            ((m.status === "FINISHED" || m.status === "AWARDED") &&
+              !scoreKnown(m.id)))),
     )
-    .sort((a, b) => {
-      const aLive = a.status === "IN_PLAY" || a.status === "PAUSED";
-      const bLive = b.status === "IN_PLAY" || b.status === "PAUSED";
-      return Number(aLive) - Number(bLive); // finished first
-    })
+    .sort((a, b) => detailPriority(a) - detailPriority(b))
     .slice(0, DETAIL_FETCH_BUDGET);
 
   const details = await Promise.all(
@@ -103,11 +115,18 @@ export async function GET(request: Request) {
 
   // football-data serves inconsistent responses (stale replicas): a match
   // can come back TIMED with no score minutes after another response said
-  // FINISHED 2-0 (observed on MEX/RSA, opening night). Two guards:
+  // FINISHED 2-0 (observed on MEX/RSA, opening night). Three guards:
   // 1. Status never regresses: scheduled -> live -> final is one-way.
   //    `postponed` is exempt both directions (suspensions and reschedules
   //    are legitimate back-and-forth).
   // 2. A known score is never clobbered by a null.
+  // 3. A stored DECISIVE knockout winner is never clobbered by a level (or
+  //    null) score: a knockout cannot end level, so an incoming FINISHED level
+  //    score is finalization-stage-1 garbage (QF 537385/537386, 2026-07-11,
+  //    where a stale 1-1 overwrote the correct decisive score and stranded the
+  //    row showing a phantom draw for ~6h). A DECISIVE incoming score still
+  //    flows, preserving the 018 winner-correction path. See
+  //    shouldKeepExistingKnockoutResult in lib/football-data.
   const STATUS_RANK: Record<string, number> = {
     scheduled: 0,
     live: 1,
@@ -144,6 +163,13 @@ export async function GET(request: Request) {
       row.score_b = ex.score_b;
       row.winner_code = ex.winner_code;
     }
+    // Guard 3 (Fix A): keep a stored decisive knockout winner against an
+    // incoming level/null score.
+    if (shouldKeepExistingKnockoutResult(m, ex)) {
+      row.score_a = ex.score_a;
+      row.score_b = ex.score_b;
+      row.winner_code = ex.winner_code;
+    }
     return row;
   });
 
@@ -167,7 +193,32 @@ export async function GET(request: Request) {
     const espnScores = await fetchEspnScores();
     const FIXTURE_MATCH_WINDOW_MS = 12 * 60 * 60 * 1000;
     for (const row of matchRows) {
-      if (row.status === "final" || !row.team_a_code || !row.team_b_code) {
+      // Fix C: normally skip any final row, but a LIMBO knockout (final,
+      // knockout stage, winner_code still null) is exactly the row ESPN can
+      // rescue - keep writing its running/final score so an extra-time result
+      // lands hours before football-data's bulk feed corrects fullTime. Two
+      // conscious, preserved consequences:
+      //  - Extra time: ESPN's `post` score equals fd's eventual fullTime, so
+      //    the decisive winner (and settlement, since fd already says FINISHED)
+      //    is correct hours earlier - the winner safety net / gate 1 still
+      //    require fd's own FINISHED, so this is not "settling on ESPN".
+      //  - Shootouts: ESPN's score stays level (penalties are separate in its
+      //    payload), so winner_code stays null and gate 3 keeps settlement
+      //    blocked until football-data delivers - unchanged, safe behavior.
+      // The rescue accepts ONLY ESPN's end-of-match (`post`) score. If ESPN is
+      // still in play (fd flipped FINISHED prematurely, POR/CRO-style), a
+      // transient mid-extra-time decisive score written to a final row would
+      // trip the winner safety net and settle picks mid-match - self-healing
+      // would fix it later, but live payouts must never churn like that.
+      const isLimboKnockout =
+        row.status === "final" &&
+        row.stage !== "group" &&
+        row.winner_code === null;
+      if (
+        (row.status === "final" && !isLimboKnockout) ||
+        !row.team_a_code ||
+        !row.team_b_code
+      ) {
         continue;
       }
       const kickoff = Date.parse(row.kickoff_at);
@@ -178,6 +229,7 @@ export async function GET(request: Request) {
             (s.homeCode === row.team_b_code && s.awayCode === row.team_a_code)),
       );
       if (!ev) continue;
+      if (isLimboKnockout && ev.state !== "post") continue;
       const swapped = ev.homeCode === row.team_b_code;
       const a = swapped ? ev.awayScore : ev.homeScore;
       const b = swapped ? ev.homeScore : ev.awayScore;
@@ -311,6 +363,21 @@ export async function GET(request: Request) {
   // of the RPC not existing before scripts/010 is applied.
   await supabase.rpc("wc_refresh_user_scores", { targets: null });
 
+  // Lock each due pick's stake_mult to the bettor's rate AT KICKOFF (when bets
+  // lock), the product rule as of scripts/019. Runs once per tick, AFTER the
+  // settlement loop and AFTER wc_refresh_user_scores above, so a match that
+  // settled THIS tick is already reflected in the snapshot before the next
+  // kickoff locks against it. One-shot per pick (the mult_locked_at null gate in
+  // the RPC), so a match settling mid-game never churns an already-locked rate.
+  // Best-effort + tolerant of the RPC not existing yet (same pattern as the
+  // wc_refresh_user_scores call): if scripts/019 isn't applied, data is null and
+  // the count stays 0.
+  let multsLocked = 0;
+  {
+    const { data } = await supabase.rpc("lock_due_stake_mults");
+    if (typeof data === "number") multsLocked = data;
+  }
+
   return Response.json({
     ok: true,
     teams: teams.length,
@@ -320,6 +387,7 @@ export async function GET(request: Request) {
     espn_finals: espnFinals,
     picks_settled: settled,
     picks_refunded: refunded,
+    mults_locked: multsLocked,
     elapsed_ms: Date.now() - startedAt,
   });
 }

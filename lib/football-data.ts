@@ -49,9 +49,32 @@ export type FdMatch = {
     // `winner` is null on penalty shootouts (duration PENALTY_SHOOTOUT) - the
     // shootout result is folded into `fullTime` instead, so we derive the
     // winner from fullTime rather than trusting this field. See toMatchRow.
+    //
+    // FINALIZATION IS NOT ATOMIC (verified against live v4 payloads, QF 537385
+    // ENG/NOR + 537386 ARG/SUI, 2026-07-11). On a knockout that runs past 90',
+    // the fields land in stages and the free tier serves stale replicas, so a
+    // consumer can observe intermediate states in any order:
+    //   1. `status` flips to FINISHED first, sometimes with `fullTime` still
+    //      holding only the REGULATION score (a LEVEL 1-1) and `winner` null.
+    //   2. `regularTime`/`extraTime`/`penalties` and the corrected (cumulative)
+    //      `fullTime` land later - up to ~6h later on the bulk feed.
+    //   3. `winner` lands last.
+    // `fullTime` is the cumulative final total once COMPLETE: regular + extra
+    // time, with shootout goals folded in too. But it is transiently WRONG
+    // (regulation-only, level) on a FINISHED knockout mid-finalization - so a
+    // FINISHED knockout at a level `fullTime` is ALWAYS an incomplete-
+    // finalization artifact, never a real result (knockouts cannot end level).
+    // hasCompleteKnockoutResult() encodes that invariant. The single-match
+    // detail endpoint (fetchMatch) finalizes sooner than the bulk feed.
     winner: "HOME_TEAM" | "AWAY_TEAM" | "DRAW" | null;
     duration?: string;
     fullTime: { home: number | null; away: number | null };
+    // Present only once the breakdown lands (stage 2 above); unused by the
+    // mappers, which derive from the cumulative `fullTime`, but documented here
+    // as the signal that finalization is complete.
+    regularTime?: { home: number | null; away: number | null };
+    extraTime?: { home: number | null; away: number | null };
+    penalties?: { home: number | null; away: number | null };
   };
   lastUpdated: string;
 };
@@ -115,14 +138,91 @@ export function groupLetterFrom(group: string | null): string | null {
   return m ? m[1] : null;
 }
 
+/** True for every stage except the group phase (knockouts cannot end level). */
+export function isKnockoutStage(stage: FdStage): boolean {
+  return stage !== "GROUP_STAGE";
+}
+
+/**
+ * The finalization invariant (see the FdMatch.score comment for the full
+ * lifecycle). A result is COMPLETE when football-data reports it FINISHED/
+ * AWARDED with a non-null fullTime AND, for a knockout, a DECISIVE fullTime.
+ * A FINISHED knockout at a null or LEVEL fullTime is a stage-1 finalization
+ * artifact, not a real result. Group draws are legitimate, so a level fullTime
+ * there is still complete.
+ */
+export function hasCompleteKnockoutResult(m: FdMatch): boolean {
+  if (m.status !== "FINISHED" && m.status !== "AWARDED") return false;
+  const { home, away } = m.score.fullTime;
+  if (home === null || away === null) return false;
+  if (!isKnockoutStage(m.stage)) return true; // group draws are complete
+  return home !== away; // a knockout result must be decisive
+}
+
+/** Minimal shape of a stored wc_matches row that the merge guards need. */
+export type ExistingMatchState = {
+  score_a: number | null;
+  score_b: number | null;
+  winner_code: string | null;
+};
+
+/**
+ * Fix A - stale-level clobber guard. A stored DECISIVE knockout winner is
+ * terminal: nothing football-data serves afterwards should overwrite it with a
+ * level or null score, because a knockout cannot end level, so such an incoming
+ * score can only be finalization-stage-1 garbage. Returns true when the stored
+ * row must be kept.
+ *
+ * An incoming DECISIVE result (hasCompleteKnockoutResult -> true) is NOT kept;
+ * it flows through even when it differs from the stored winner - that is the
+ * legitimate winner-correction path the 018 self-healing settlement relies on
+ * (SUI/COL 537382).
+ */
+export function shouldKeepExistingKnockoutResult(
+  m: FdMatch,
+  ex: ExistingMatchState,
+): boolean {
+  const exDecisiveWinner =
+    isKnockoutStage(m.stage) &&
+    ex.score_a !== null &&
+    ex.score_b !== null &&
+    ex.score_a !== ex.score_b &&
+    ex.winner_code !== null;
+  return exDecisiveWinner && !hasCompleteKnockoutResult(m);
+}
+
+/**
+ * Fix B - detail-endpoint rescue for limbo knockouts. A knockout that
+ * football-data reports FINISHED/AWARDED but WITHOUT a decisive fullTime (null
+ * or level) is stuck mid-finalization. While the stored row still has no winner
+ * we fetch the single-match detail endpoint (which finalizes sooner and carries
+ * the extraTime/penalties breakdown) to turn a multi-hour limbo into minutes.
+ * Once a decisive winner is stored we stop spending calls.
+ */
+export function needsLimboDetailFetch(
+  m: FdMatch,
+  dbWinnerCode: string | null | undefined,
+): boolean {
+  if (m.status !== "FINISHED" && m.status !== "AWARDED") return false;
+  if (!isKnockoutStage(m.stage)) return false;
+  if (hasCompleteKnockoutResult(m)) return false;
+  return dbWinnerCode === null || dbWinnerCode === undefined;
+}
+
 export function toMatchRow(m: FdMatch): MatchRow {
   // Winner is derived from the fullTime score, NOT score.winner. football-data
   // leaves score.winner null for penalty shootouts (observed AUS/EGY r32:
   // winner null, duration PENALTY_SHOOTOUT, fullTime 3-5) but folds the
   // shootout tally into fullTime, so the higher fullTime score is the true
   // winner. A level fullTime is a draw (winner null). This is also robust to
-  // the transient null winner football-data returns mid-finalization, which is
-  // how POR/CRO settled as a phantom draw.
+  // the transient null winner football-data returns mid-finalization.
+  //
+  // CAVEAT: `fullTime` itself is transiently WRONG (regulation-only, level) on
+  // a FINISHED knockout during stage-1 finalization, so this mapper will emit a
+  // null winner + level score for such a row. That is a real, expected
+  // intermediate state - the sync's clobber guard (Fix A) and detail rescue
+  // (Fix B) keep it from corrupting a row that already knows the true result.
+  // See hasCompleteKnockoutResult and the FdMatch.score lifecycle comment.
   const { home, away } = m.score.fullTime;
   const winnerCode =
     home === null || away === null
